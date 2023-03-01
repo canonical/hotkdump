@@ -56,6 +56,7 @@ class hotkdump:
 
     def download_vmlinux(self, kernel_version: str):
         # stub, this returns the filename it downloads and keeps in cwd
+        # https://wiki.ubuntu.com/Debug%20Symbol%20Packages
         # hardcode for now
         return "vmlinux-5.15.0-52-generic"
         
