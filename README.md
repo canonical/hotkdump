@@ -10,7 +10,7 @@ determine the kernel version (‘crash –osrelease dump.core’, or ‘strings 
 download the debugsyms using the approach in https://wiki.ubuntu.com/Debug%20Symbol%20Packages (might be an easier way to install the debugsyms?) ,
 pickup the (most recent installed) debugsym from /lib/debug/boot ,
 spawn a shell in which to run crash with the vmcore and debugsyms as args (remember to load modules needed by the vmcore too, so first run mod to get that list) ,
-log to a file the outputs of basic commands like bt, kmem -i, log, sys, dev -d, etc. ,
+log to a file (for now its hotkdump.out in the cwd) the outputs of basic commands like bt, kmem -i, log, sys, dev -d, etc. ,
 pass the casenum and the file to athena to make an internal comment on the case.
 
 (cleanup/logging)
