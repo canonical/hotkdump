@@ -8,8 +8,7 @@ import pexpect
 import logging
 import re
 
-from signal import SIG_DFL, SIGPIPE, getsignal, signal
-from subprocess import DEVNULL, PIPE, STDOUT, TimeoutExpired, run
+from subprocess import run
 
 #am sure will need all this later
 from typing import Dict, List, Tuple, Union
@@ -20,7 +19,7 @@ class hotkdump:
     #have some class variables here to make things easy
         print("in init...")
 
-    def execute_cmd(self, command: str, args: str) -> Tuple[str, int]:
+    def execute_cmd(self, command: str, args: str , run_or_check: int) -> Tuple[str, int]:
         print("in execute_cmd")
         print(command)
         print(args)
@@ -29,30 +28,31 @@ class hotkdump:
         try:
             fullcmd = command + args
             print(fullcmd)
-            cmd_to_execute = run(command, stdout=PIPE, stderr=STDOUT, input=args.encode(), check=False)
-            output = cmd_to_execute.stdout
+            if run_or_check == 1:
+                result = subprocess.check_output(fullcmd, text=True,shell=True)
+            else:
+                result = subprocess.call(fullcmd, text=True, shell=True)
+
+            #cmd_to_execute = run(command, stdout=PIPE, stderr=STDOUT, input=args.encode(), check=False)
+            print(result)
+            #output = cmd_to_execute.stdout
         except OSError as err:
             print("OSError")
             print(err)
         except Exception as err:
             print("exception")
             print(err)
-        try:
-            if output is not None:
-                output.decode("utf-8")
-        except UnicodeDecodeError as err:
-            print("unicodedecodeerror")
 
-        if cmd_to_execute.returncode:
-            return_code = cmd_to_execute.returncode
-
-        return output, return_code
+        return result
 
     def get_kernel_version(self, vmcore):
+        print("in get_kernel_version")
         cmd = "crash"
         args = " --osrelease " + str(vmcore) 
-        output = self.execute_cmd(cmd,args)
-        return output
+        output = self.execute_cmd(cmd,args,1)
+        print("got this output from execute_cmd")
+        print(str(output))
+        return str(output)
 
     def download_vmlinux(self, kernel_version: str):
         # stub, this returns the filename it downloads and keeps in cwd
@@ -82,10 +82,10 @@ def main():
     # casenum (for athena) and the name or full files.canonical path of the vmcore
     dump = vmcore
 
-    cmd = "crash " 
+    cmd = "./crash " 
     args = str(dump) + " " + str(vmlinux)
     print(args)
-    output = hotk.execute_cmd(cmd,args)
+    output = hotk.execute_cmd(cmd,args,0)
 
 if __name__=="__main__":
     main()
