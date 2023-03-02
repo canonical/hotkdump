@@ -99,11 +99,12 @@ def main():
     output = hotk.execute_cmd(cmd,args,0)
     file_crashrc = open('/home/hotkdump/.crashrc', 'r')
     all_crashrc_commands = file_crashrc.readlines()
-    print("Collected output of..")
+    print("Collected output of.. \n")
     for line in all_crashrc_commands:
-        if 'echo' not in line:
-            print(line)
-    print("See hotkdump.log for logs")
+        if 'echo' not in line and 'quit' not in line:
+            line_to_print = line.split(">")[0]
+            print(line_to_print)
+    print("\nSee hotkdump.log for logs")
     print("See hotkdump.out for output")
 
 if __name__=="__main__":

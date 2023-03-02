@@ -2,7 +2,6 @@
 sys > hotkdump.out
 !echo "\nOutput of bt\n" >> hotkdump.out
 bt  >> hotkdump.out
-!echo "\n" >> hotkdump.out
 !echo "\nOutput of log with audit messages filtered out\n" >> hotkdump.out
 log | grep -vi audit >> hotkdump.out
 !echo "\nOutput of kmem -i\n" >> hotkdump.out
