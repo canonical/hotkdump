@@ -1,7 +1,6 @@
 sys > hotkdump.out
 bt  >> hotkdump.out
 log | grep -vi audit >> hotkdump.out
-!echo "\n" << hotkdump.out
 kmem -i >> hotkdump.out
 dev -d >> hotkdump.out
 ps -m | grep UN | tail >> hotkdump.out
