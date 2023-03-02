@@ -159,9 +159,6 @@ def main():
         print("got empty vmlinux")
         ## goto out? :-X
     else:
-        # assuming vmcore exists in cwd for now
-        # can figure later how to download it from files.canonical given a 
-        # casenum (for athena) and the name or full files.canonical path of the vmcore
         dump = hotk.vmcore
         print(dump)
         print("is dump\n")
