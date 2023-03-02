@@ -34,7 +34,7 @@ class hotkdump:
 
     def execute_cmd(self, command: str, args: str , run_or_check: int) -> Tuple[str, int]:
         logging.info("in execute_cmd with command %s and args %s" , command,args)
-        return_code = 0
+        result = 0
         output = None
         try:
             fullcmd = command + args
@@ -56,8 +56,8 @@ class hotkdump:
 
     def get_kernel_version(self, vmcore):
         logging.info("in get_kernel_version with vmcore %s", vmcore)
+        cmd = "./crash -s"
         args = " --osrelease " + str(vmcore) 
-        cmd = "./crash"
         output = self.execute_cmd(cmd , args,1)
         logging.info("got this output from execute_cmd %s",str(output))
         return str(output)
@@ -86,8 +86,10 @@ def main():
     logging.info(args)
 
     #todo move cmd to a class variable
-    cmd = "./crash "
+    cmd = "./crash -s "
     output = hotk.execute_cmd(cmd,args,0)
+    print("See hotkdump.log for logs")
+    print("See hotkdump.out for output")
 
 if __name__=="__main__":
     main()
