@@ -2,16 +2,20 @@
 import argparse
 import os
 import sys
-import time
 import subprocess
-import pexpect
 import logging
-import re
 
 from subprocess import run
 
 #am sure will need all this later
 from typing import Dict, List, Tuple, Union
+
+
+"""
+TODOS:
+
+Removed
+"""
 
 
 class hotkdump:
@@ -70,8 +74,9 @@ class hotkdump:
         print("Downloading vmcore for kernel", kernel_version)
         logging.info("Downloading vmcore for kernel %s",kernel_version)
         # stub, this returns the filename it downloads and keeps in cwd
-        # https://wiki.ubuntu.com/Debug%20Symbol%20Packages
         # hardcode for now
+
+        # see https://wiki.ubuntu.com/Debug%20Symbol%20Packages
         return "vmlinux-5.15.0-52-generic"
         
 def main():
@@ -81,7 +86,6 @@ def main():
     kernel_version = hotk.get_kernel_version(str(hotk.vmcore))
     logging.info("%s is kernel_version",kernel_version)
     vmlinux = hotk.download_vmlinux(kernel_version)
-
 
     # taking from args for now, assuming vmcore exists in cwd for now
     # can figure later how to download it from files.canonical given a 
