@@ -34,6 +34,10 @@ class hotkdump:
 
     def execute_cmd(self, command: str, args: str , run_or_check: int) -> Tuple[str, int]:
         logging.info("in execute_cmd with command %s and args %s" , command,args)
+        fullcmd = command + args
+        #print("executing", fullcmd)
+        logging.info("executing %s", fullcmd)
+        logging.info("in execute_cmd with command %s and args %s" , command,args)
         result = 0
         output = None
         try:
@@ -63,6 +67,8 @@ class hotkdump:
         return str(output)
 
     def download_vmlinux(self, kernel_version: str):
+        print("Downloading vmcore for kernel", kernel_version)
+        logging.info("Downloading vmcore for kernel %s",kernel_version)
         # stub, this returns the filename it downloads and keeps in cwd
         # https://wiki.ubuntu.com/Debug%20Symbol%20Packages
         # hardcode for now
@@ -85,9 +91,18 @@ def main():
     logging.info("args to main are ...")
     logging.info(args)
 
-    #todo move cmd to a class variable
+    # todo move cmd to a class variable
+    # remove the -s if you want to see console output 
+    # of what crash is upto, in case there's a failure
     cmd = "./crash -s "
+    print("Loading vmcore into crash.. please wait..")
     output = hotk.execute_cmd(cmd,args,0)
+    file_crashrc = open('/home/hotkdump/.crashrc', 'r')
+    all_crashrc_commands = file_crashrc.readlines()
+    print("Collected output of..")
+    for line in all_crashrc_commands:
+        if 'echo' not in line:
+            print(line)
     print("See hotkdump.log for logs")
     print("See hotkdump.out for output")
 
