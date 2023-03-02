@@ -18,7 +18,8 @@ and for which case, for automatically updating the case without someone needing
 to manually run the script and pass in the casenum and vmcore name. 
 This will need a cron job.
 
-2) need to download the vmcore instead of current hardcoding.
+2) need to download the vmcore instead of current hardcoding. - DONE but needs 
+additional ways apart from apt-get, like perhaps pull-lp-ddebs
 
 3) need to handover hotkdump.out to athena for internal case update
 
