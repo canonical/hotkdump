@@ -15,27 +15,36 @@ from typing import Dict, List, Tuple, Union
 
 
 class hotkdump:
+    vmcore = ""
+    casenum = ""
+    cmd = "" 
+
     def __init__(self):
-    #have some class variables here to make things easy
-        print("in init...")
+        logging.basicConfig(filename='hotkdump.log', level=logging.INFO)
+
+        logging.info("starting logs")
+        logging.info("in init..")
+        ap = argparse.ArgumentParser()
+        ap.add_argument("-c", "--casenum",  required=True, help="SF case number")
+        ap.add_argument("-d", "--dump", required=True, help="name of vmcore file")
+        args = vars(ap.parse_args())
+        self.casenum = args['casenum']
+        self.vmcore = args['dump']
+        logging.info('self.vmcore is %s', self.vmcore)
 
     def execute_cmd(self, command: str, args: str , run_or_check: int) -> Tuple[str, int]:
-        print("in execute_cmd")
-        print(command)
-        print(args)
+        logging.info("in execute_cmd with command %s and args %s" , command,args)
         return_code = 0
         output = None
         try:
             fullcmd = command + args
-            print(fullcmd)
+            logging.info("fullcmd is %s",fullcmd)
             if run_or_check == 1:
                 result = subprocess.check_output(fullcmd, text=True,shell=True)
             else:
                 result = subprocess.call(fullcmd, text=True, shell=True)
 
-            #cmd_to_execute = run(command, stdout=PIPE, stderr=STDOUT, input=args.encode(), check=False)
-            print(result)
-            #output = cmd_to_execute.stdout
+            logging.info("result is.. %s",result)
         except OSError as err:
             print("OSError")
             print(err)
@@ -46,12 +55,11 @@ class hotkdump:
         return result
 
     def get_kernel_version(self, vmcore):
-        print("in get_kernel_version")
-        cmd = "crash"
+        logging.info("in get_kernel_version with vmcore %s", vmcore)
         args = " --osrelease " + str(vmcore) 
-        output = self.execute_cmd(cmd,args,1)
-        print("got this output from execute_cmd")
-        print(str(output))
+        cmd = "./crash"
+        output = self.execute_cmd(cmd , args,1)
+        logging.info("got this output from execute_cmd %s",str(output))
         return str(output)
 
     def download_vmlinux(self, kernel_version: str):
@@ -61,31 +69,24 @@ class hotkdump:
         return "vmlinux-5.15.0-52-generic"
         
 def main():
-    print("in main..")
-    logfile = open("/tmp/hotkdump_log", "w")
-    logfile.write("starting logs")
-    ap = argparse.ArgumentParser()
-    ap.add_argument("-c", "--casenum",  required=True, help="SF case number")
-    ap.add_argument("-d", "--dump", required=True, help="name of vmcore file")
-    args = vars(ap.parse_args())
-
-    casenum = args['casenum']
-    vmcore = args['dump']
-
     hotk = hotkdump()
 
-    kernel_version = hotk.get_kernel_version(str(vmcore))
-    print(kernel_version)
+    logging.info("%s is hotk.vmcore",hotk.vmcore)
+    kernel_version = hotk.get_kernel_version(str(hotk.vmcore))
+    logging.info("%s is kernel_version",kernel_version)
     vmlinux = hotk.download_vmlinux(kernel_version)
+
 
     # taking from args for now, assuming vmcore exists in cwd for now
     # can figure later how to download it from files.canonical given a 
     # casenum (for athena) and the name or full files.canonical path of the vmcore
-    dump = vmcore
-
-    cmd = "./crash " 
+    dump = hotk.vmcore
     args = str(dump) + " " + str(vmlinux)
-    print(args)
+    logging.info("args to main are ...")
+    logging.info(args)
+
+    #todo move cmd to a class variable
+    cmd = "./crash "
     output = hotk.execute_cmd(cmd,args,0)
 
 if __name__=="__main__":
