@@ -173,7 +173,7 @@ class hotkdump:
                 else:
                     print("did not find the dbgsym in /lib/debug/boot/ even though apt-get seemed to work!")
                     return ""
-    def cleanup(vmlinux):
+    def cleanup(self, vmlinux):
         cmd = "rm -rf "
         if self.used_apt_get == 1:
             args = vmlinux
@@ -184,7 +184,7 @@ class hotkdump:
             output = hotk.execute_cmd(cmd,args,0)
         elif self.used_pull_lp_ddebs == 1:
             args = "extract_folder"
-        hotk.execute_cmd(cmd,args,0)
+            self.execute_cmd(cmd,args,0)
         print("done with cleanup")
         
 def main():
