@@ -21,6 +21,8 @@ class hotkdump:
     vmcore = ""
     casenum = ""
     cmd = "" 
+    used_apt_get=0
+    used_pull_lp_ddebs=0
 
     def __init__(self):
         logging.basicConfig(filename='hotkdump.log', level=logging.INFO)
@@ -49,7 +51,7 @@ class hotkdump:
             if run_or_check == 1:
                 result = subprocess.check_output(fullcmd, text=True,shell=True)
             else:
-                result = subprocess.call(fullcmd, text=True, shell=True)
+                result = subprocess.call(fullcmd, text=True, shell=True )
 
             logging.info("result is.. %s",result)
         except OSError as err:
@@ -77,7 +79,7 @@ class hotkdump:
         kernel_version = kernel_version.rstrip()
         check_cwd = "./vmlinux-" + kernel_version
         if os.path.exists(check_cwd):
-            print("% file already exists in cwd ",check_cwd)
+            print("file already exists in cwd .. found.. ",check_cwd)
             return "vmlinux-" + kernel_version
         elif os.path.exists("/lib/debug/boot/vmlinux-" + kernel_version):
             # this stuff really needs its own function so can be reused below
@@ -106,29 +108,64 @@ class hotkdump:
             return "vmlinux-" + kernel_version
         else:
             # need to install the dbgsym
-            args = "install -y linux-image-" + kernel_version + "-dbgsym"
-            print(cmd + args)
-            print("sending that cmd off for execution")
-            output = self.execute_cmd(cmd, args,0)
-            if output == 0:
-                #move the debug file into cwd
-                cmd = "cp "
-                args = "/lib/debug/boot/" + "vmlinux-" + kernel_version 
-                fullargs = args + " ."
-                fullcmd = cmd + fullargs
-                print(fullcmd)
-                if os.path.exists(args):
-                    print("doing cp now")
-                    print(cmd+args)
-                    output = self.execute_cmd(cmd,fullargs,0)
+            # first try with pull-lp-ddebs
+            pull_lp_cmd = "pull-lp-ddebs"
+            pull_lp_args = " linux-image-unsigned-" + kernel_version
+            fullcmd = pull_lp_cmd + pull_lp_args
+            print("sending command.. " , fullcmd)
+            #result = subprocess.check_output(fullcmd)
+            result = subprocess.run(fullcmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            #output = self.execute_cmd(pull_lp_cmd,pull_lp_args,0)
+            print(result)
+            print("just printed result")
+            if result.returncode == 0:
+                used_pull_lp_ddebs=1 # so we can delete the folder at exit
+                split_result = str(result.stdout).split("Downloading")[1]
+                print(split_result)
+                filename = split_result.lstrip().split()[0]
+                print(filename)
+                cmd = "mkdir"
+                args = " extract_folder"
+                output = self.execute_cmd(cmd, args,0)
+                if output == 0:
+                    cmd = "dpkg"
+                    args = " -x " + filename + " extract_folder"
+                    print("executing this command now ",cmd + args)
+                    output = self.execute_cmd(cmd,args,0)
                     if output == 0:
-                        print("output 0")
-                        return "vmlinux-" + kernel_version
+                        return "extract_folder/usr/lib/debug/boot/vmlinux-" + kernel_version
                     else:
-                        print("output of cp not 0")
+                        return ""
+                else:
+                    return ""
+
             else:
-                print("output of apt-get install not 0")
-                return ""
+                #try apt-get install and pickup lib from /lib/debug/boot
+                used_apt_get=1 #so we can delete the file from cwd at exit time
+                cmd = "apt-get "
+                args = "install -y linux-image-" + kernel_version + "-dbgsym"
+                print(cmd + args)
+                print("sending that cmd off for execution")
+                output = self.execute_cmd(cmd, args,0)
+                if output == 0:
+                    #move the debug file into cwd
+                    cmd = "cp "
+                    args = "/lib/debug/boot/" + "vmlinux-" + kernel_version 
+                    fullargs = args + " ."
+                    fullcmd = cmd + fullargs
+                    print(fullcmd)
+                    if os.path.exists(args):
+                        print("doing cp now")
+                        print(cmd+args)
+                        output = self.execute_cmd(cmd,fullargs,0)
+                        if output == 0:
+                            print("output 0")
+                            return "vmlinux-" + kernel_version
+                        else:
+                            print("output of cp not 0")
+                else:
+                    print("output of apt-get install not 0")
+                    return ""
         
 def main():
     hotk = hotkdump()
@@ -141,6 +178,7 @@ def main():
         print("got empty vmlinux")
         ## goto out? :-X
     else:
+        print("got this vmlinux from the function ",vmlinux)
         dump = hotk.vmcore
         print(dump)
         print("is dump\n")
