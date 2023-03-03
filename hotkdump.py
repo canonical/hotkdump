@@ -61,7 +61,12 @@ class hotkdump:
             print("exception")
             print(err)
 
-        return result
+        if result != 0 and run_or_check == 0:
+            logging.info("result of command %s was non 0!!!", fullcmd)
+            print(result)
+            exit()
+        else:
+            return result
 
     def get_kernel_version(self, vmcore):
         logging.info("in get_kernel_version with vmcore %s", vmcore)
@@ -97,13 +102,9 @@ class hotkdump:
                 print("doing cp now")
                 print(fullcmd)
                 output = self.execute_cmd(cmd,fullargs,0)
-                if output == 0:
-                    print("output 0")
-                    return "vmlinux-" + kernel_version
-                else:
-                    print("output of cp not 0")
+                return "vmlinux-" + kernel_version
             else:
-                print("not exists??")
+                print("such path not exist??")
                 return ""
             return "vmlinux-" + kernel_version
         else:
@@ -114,8 +115,8 @@ class hotkdump:
             fullcmd = pull_lp_cmd + pull_lp_args
             print("sending command.. " , fullcmd)
             #result = subprocess.check_output(fullcmd)
+            #running this from here as an exception due to the stderr stuff
             result = subprocess.run(fullcmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            #output = self.execute_cmd(pull_lp_cmd,pull_lp_args,0)
             print(result)
             print("just printed result")
             if result.returncode == 0:
@@ -127,18 +128,11 @@ class hotkdump:
                 cmd = "mkdir"
                 args = " extract_folder"
                 output = self.execute_cmd(cmd, args,0)
-                if output == 0:
-                    cmd = "dpkg"
-                    args = " -x " + filename + " extract_folder"
-                    print("executing this command now ",cmd + args)
-                    output = self.execute_cmd(cmd,args,0)
-                    if output == 0:
-                        return "extract_folder/usr/lib/debug/boot/vmlinux-" + kernel_version
-                    else:
-                        return ""
-                else:
-                    return ""
-
+                cmd = "dpkg"
+                args = " -x " + filename + " extract_folder"
+                print("executing this command now ",cmd + args)
+                output = self.execute_cmd(cmd,args,0)
+                return "extract_folder/usr/lib/debug/boot/vmlinux-" + kernel_version
             else:
                 #try apt-get install and pickup lib from /lib/debug/boot
                 used_apt_get=1 #so we can delete the file from cwd at exit time
@@ -147,25 +141,33 @@ class hotkdump:
                 print(cmd + args)
                 print("sending that cmd off for execution")
                 output = self.execute_cmd(cmd, args,0)
-                if output == 0:
-                    #move the debug file into cwd
-                    cmd = "cp "
-                    args = "/lib/debug/boot/" + "vmlinux-" + kernel_version 
-                    fullargs = args + " ."
-                    fullcmd = cmd + fullargs
-                    print(fullcmd)
-                    if os.path.exists(args):
-                        print("doing cp now")
-                        print(cmd+args)
-                        output = self.execute_cmd(cmd,fullargs,0)
-                        if output == 0:
-                            print("output 0")
-                            return "vmlinux-" + kernel_version
-                        else:
-                            print("output of cp not 0")
+                #move the debug file into cwd
+                cmd = "cp "
+                args = "/lib/debug/boot/" + "vmlinux-" + kernel_version 
+                fullargs = args + " ."
+                fullcmd = cmd + fullargs
+                print(fullcmd)
+                if os.path.exists(args):
+                    print("doing cp now")
+                    print(cmd+args)
+                    output = self.execute_cmd(cmd,fullargs,0)
+                    return "vmlinux-" + kernel_version
                 else:
-                    print("output of apt-get install not 0")
+                    print("did not find the dbgsym in /lib/debug/boot/ even though apt-get seemed to work!")
                     return ""
+    def cleanup(vmlinux):
+        cmd = "rm -rf "
+        if self.used_apt_get == 1:
+            args = vmlinux
+            output = hotk.execute_cmd(cmd,args,0)
+            cmd = "apt-remove" 
+            args = "linux-image-" + vmlinux + "-dbgsym"
+            print("sending off this command now to remove the debugsym package",cmd+args)
+            output = hotk.execute_cmd(cmd,args,0)
+        elif self.used_pull_lp_ddebs == 1:
+            args = "extract_folder"
+        hotk.execute_cmd(cmd,args,0)
+        print("done with cleanup")
         
 def main():
     hotk = hotkdump()
@@ -205,6 +207,8 @@ def main():
                 print(line_to_print)
         print("\nSee hotkdump.log for logs")
         print("See hotkdump.out for output")
+        hotk.cleanup(vmlinux)
+
 
 if __name__=="__main__":
     main()
