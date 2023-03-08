@@ -11,3 +11,4 @@ dev -d >> hotkdump.out
 !echo "\nOldest blocked processes\n" >> hotkdump.out
 ps -m | grep UN | tail >> hotkdump.out
 quit
+

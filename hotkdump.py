@@ -237,7 +237,7 @@ def main():
         cmd = "./crash -s "
         print("Loading vmcore into crash.. please wait..")
         output = hotk.execute_cmd(cmd,args,0)
-        file_crashrc = open('/home/hotkdump/.crashrc', 'r')
+        file_crashrc = open('.crashrc', 'r')
         all_crashrc_commands = file_crashrc.readlines()
         print("Collected output of.. \n")
         for line in all_crashrc_commands:
