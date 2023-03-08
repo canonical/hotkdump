@@ -18,19 +18,40 @@ and for which case, for automatically updating the case without someone needing
 to manually run the script and pass in the casenum and vmcore name. 
 This will need a cron job.
 
-2) need to download the vmcore instead of current hardcoding. - DONE but needs 
-additional ways apart from apt-get, like perhaps pull-lp-ddebs
+2) need to download the vmcore debugsym using this approach, 
 
-3) need to handover hotkdump.out to athena for internal case update
+nikhil@nikhil-XPS-15-7590:~/hotkdump/hotkdump/202211220833$ strings dump.202211220833 | head -n5
+KDUMP
+hc-hrrijf1-j304c7y6
+5.15.0-52-generic
+#58~20.04.1-Ubuntu SMP Thu Oct 13 13:09:46 UTC 2022 <---- append this as below
+x86_64
 
-4) can athena read from sfdc case (instead of just write as internal comment) 
-and figure when a new vmcore gets uploaded, and read the full file path 
-from there? This will need polling though.
+nikhil@nikhil-XPS-15-7590:~/hotkdump/hotkdump/202211220833$ pull-lp-ddebs linux-image-unsigned-5.15.0-52-generic 5.15.0-52.58~20.04.1
+Source package lookup failed, trying lookup of binary package linux-image-unsigned-5.15.0-52-generic
+Using source package 'linux-hwe-5.15' for binary package 'linux-image-unsigned-5.15.0-52-generic'
+Found linux-hwe-5.15 5.15.0-52.58~20.04.1 in focal
+Pulling only binary package 'linux-image-unsigned-5.15.0-52-generic'
+Use package name 'linux-hwe-5.15' to pull all binary packages
+Please wait, this may take some time...
+Download Error: 503 Server Error: Service Unavailable for url: http://ddebs.ubuntu.com/pool/main/l/linux-hwe-5.15/linux-image-unsigned-5.15.0-52-generic-dbgsym_5.15.0-52.58~20.04.1_amd64.ddeb
+Downloading linux-image-unsigned-5.15.0-52-generic-dbgsym_5.15.0-52.58~20.04.1_amd64.ddeb from launchpadlibrarian.net (1295.525 MiB)
+[=====================================================>]100%
+
+Then extract it in a folder like so,
+
+nikhil@nikhil-XPS-15-7590:~/hotkdump/hotkdump/202211220833$ mkdir extract_folder
+nikhil@nikhil-XPS-15-7590:~/hotkdump/hotkdump/202211220833$ dpkg -x linux-image-unsigned-5.15.0-52-generic-dbgsym_5.15.0-52.58~20.04.1_amd64.ddeb extract_folder/
+
+And pick it up from extract_folder/usr/lib/debug/boot/ 
+
+3) need to handover hotkdump.out to anyone who is consuming this tool, one consumer for eg 
+will update the case with an internal comment showing the auto analysis
 
 5) how often to purge, do we immediately delete the vmcore after we send off 
 the output file to athena? storage is an issue on rotom.. can we add more storage?
 
-6) ...
+6) leverage the filemover, and think about this as a generic application or a library
 
 """
 
