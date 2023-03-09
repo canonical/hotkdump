@@ -45,6 +45,53 @@ $ dpkg -x linux-image-unsigned-5.15.0-52-generic-dbgsym_5.15.0-52.58~20.04.1_amd
 
 And pick it up from extract_folder/usr/lib/debug/boot/ 
 
+
+Can also use this approach suggested by @mkg++
+
+import sys
+
+def seek_to_first_non_nul(f):
+    pos = f.tell()
+    while f.read(1) == b'\x00':
+        pos = f.tell()
+        pass
+    f.seek(pos)
+
+def readcstr(f):
+    buf = str()
+    while True:
+        b = f.read(1)
+        if (b is None) or (b == b'\x00'):
+            seek_to_first_non_nul(f)
+            return str(''.join(buf))
+        else:
+            buf += b.decode('ascii')
+
+with open(sys.argv[1], 'rb') as fd:
+    magic = fd.read(8)
+    print(magic)
+    if not magic == b'KDUMP   ':
+        print("not a kernel crash dump file")
+        sys.exit(-1)
+    version = int.from_bytes(fd.read(4), byteorder='little')
+    print("Version: {}".format(version))
+    print("system {}".format(readcstr(fd)))
+    print("node {}".format(readcstr(fd)))
+    print("release {}".format(readcstr(fd)))
+    print("version {}".format(readcstr(fd)))
+    print("machine {}".format(readcstr(fd)))
+    print("domain {}".format(readcstr(fd)))
+
+$python3 parse-fields.py dump.202212171954 
+b'KDUMP   '
+Version: 6
+system x
+node hc-hrrijf1-j304c7y7
+release 5.15.0-52-generic
+version #58~20.04.1-Ubuntu SMP Thu Oct 13 13:09:46 UTC 2022
+machine x86_64
+domain (none)
+
 3) need to handover hotkdump.out to anyone who is consuming this tool, one consumer for eg 
 will update the case with an internal comment showing the auto analysis
 
