@@ -20,14 +20,14 @@ This will need a cron job.
 
 2) need to download the vmcore debugsym using this approach, 
 
-nikhil@nikhil-XPS-15-7590:~/hotkdump/hotkdump/202211220833$ strings dump.202211220833 | head -n5
+$ strings dump.202211220833 | head -n5
 KDUMP
 hc-hrrijf1-j304c7y6
 5.15.0-52-generic
-#58~20.04.1-Ubuntu SMP Thu Oct 13 13:09:46 UTC 2022 <---- append this as below
+#58~20.04.1-Ubuntu SMP Thu Oct 13 13:09:46 UTC 2022
 x86_64
 
-nikhil@nikhil-XPS-15-7590:~/hotkdump/hotkdump/202211220833$ pull-lp-ddebs linux-image-unsigned-5.15.0-52-generic 5.15.0-52.58~20.04.1
+$ pull-lp-ddebs linux-image-unsigned-5.15.0-52-generic 5.15.0-52.58~20.04.1
 Source package lookup failed, trying lookup of binary package linux-image-unsigned-5.15.0-52-generic
 Using source package 'linux-hwe-5.15' for binary package 'linux-image-unsigned-5.15.0-52-generic'
 Found linux-hwe-5.15 5.15.0-52.58~20.04.1 in focal
@@ -40,8 +40,8 @@ Downloading linux-image-unsigned-5.15.0-52-generic-dbgsym_5.15.0-52.58~20.04.1_a
 
 Then extract it in a folder like so,
 
-nikhil@nikhil-XPS-15-7590:~/hotkdump/hotkdump/202211220833$ mkdir extract_folder
-nikhil@nikhil-XPS-15-7590:~/hotkdump/hotkdump/202211220833$ dpkg -x linux-image-unsigned-5.15.0-52-generic-dbgsym_5.15.0-52.58~20.04.1_amd64.ddeb extract_folder/
+$ mkdir extract_folder
+$ dpkg -x linux-image-unsigned-5.15.0-52-generic-dbgsym_5.15.0-52.58~20.04.1_amd64.ddeb extract_folder/
 
 And pick it up from extract_folder/usr/lib/debug/boot/ 
 
@@ -60,8 +60,7 @@ class hotkdump:
     vmcore = ""
     casenum = ""
     cmd = "" 
-    used_apt_get=0
-    used_pull_lp_ddebs=0
+    filename = ""
 
     def __init__(self):
         logging.basicConfig(filename='hotkdump.log', level=logging.INFO)
@@ -75,6 +74,41 @@ class hotkdump:
         self.casenum = args['casenum']
         self.vmcore = args['dump']
         logging.info('self.vmcore is %s', self.vmcore)
+        with open("hotkdump.out","w") as hotkdump_out:
+            #hotkdump_out.write("!echo \"Output of sys\\n\"")
+            hotkdump_out.close()
+        with open(".crashrc","w") as crashrc_file:
+            crashrc_file.write("!echo \"Output of sys\\n\" >> hotkdump.out\n")
+            crashrc_file.write("sys >> hotkdump.out\n")
+            crashrc_file.write("!echo \"\\nOutput of bt\\n\" >> hotkdump.out\n")
+            crashrc_file.write("bt >> hotkdump.out\n")
+            crashrc_file.write("!echo \"\\nOutput of log with audit messages filtered out\\n\" >> hotkdump.out\n")
+            crashrc_file.write("log | grep -vi audit >> hotkdump.out\n")
+            crashrc_file.write("!echo \"\\nOutput of kmem -i\\n\" >> hotkdump.out\n")
+            crashrc_file.write("kmem -i >> hotkdump.out\n")
+            crashrc_file.write("!echo \"\\nOutput of dev -d\\n\" >> hotkdump.out\n")
+            crashrc_file.write("dev -d >> hotkdump.out\n")
+            crashrc_file.write("!echo \"\\nOldest blocked processes\\n\" >> hotkdump.out\n")
+            crashrc_file.write("ps -m | grep UN | tail >> hotkdump.out\n")
+            crashrc_file.write("quit >> hotkdump.out\n")
+        crashrc_file.close()
+        """
+        The .crashrc file we generate should look like
+
+		!echo "Output of sys\n" >> hotkdump.out
+		sys >> hotkdump.out
+		!echo "\nOutput of bt\n" >> hotkdump.out
+		bt >> hotkdump.out
+		!echo "\nOutput of log with audit messages filtered out\n" >> hotkdump.out
+		log | grep -vi audit >> hotkdump.out
+		!echo "\nOutput of kmem -i\n" >> hotkdump.out
+		kmem -i >> hotkdump.out
+		!echo "\nOutput of dev -d\n" >> hotkdump.out
+		dev -d >> hotkdump.out
+		!echo "\nOldest blocked processes\n" >> hotkdump.out
+		ps -m | grep UN | tail >> hotkdump.out
+		quit >> hotkdump.out
+        """
 
     def execute_cmd(self, command: str, args: str , run_or_check: int) -> Tuple[str, int]:
         logging.info("in execute_cmd with command %s and args %s" , command,args)
@@ -116,96 +150,65 @@ class hotkdump:
         return str(output)
 
     def download_vmlinux(self, kernel_version: str):
-        # see https://wiki.ubuntu.com/Debug%20Symbol%20Packages
+        minor_version = ""
         print("Downloading vmcore for kernel", kernel_version)
         logging.info("Downloading vmcore for kernel %s",kernel_version)
         cmd = "apt-get "
         kernel_version = kernel_version.rstrip()
         check_cwd = "./vmlinux-" + kernel_version
-        if os.path.exists(check_cwd):
-            print("file already exists in cwd .. found.. ",check_cwd)
-            return "vmlinux-" + kernel_version
-        elif os.path.exists("/lib/debug/boot/vmlinux-" + kernel_version):
-            # this stuff really needs its own function so can be reused below
-            print("vmlinux for % found in /lib/debug/boot", kernel_version)
-            #move the debug file into cwd
-            cmd = "cp "
-            args = "/lib/debug/boot/" + "vmlinux-" + kernel_version 
-            fullargs = args + " ."
-            fullcmd = cmd + fullargs
-            print(fullcmd)
-            print("looking for", args)
-            if os.path.exists(args.rstrip()):
-                print("found")
-                print(cmd+args)
-                print("doing cp now")
-                print(fullcmd)
-                output = self.execute_cmd(cmd,fullargs,0)
-                return "vmlinux-" + kernel_version
-            else:
-                print("such path not exist??")
-                return ""
-            return "vmlinux-" + kernel_version
+        # need to install the dbgsym
+        # get the minor release using strings
+        print("need to install dbgsym")
+        strings_cmd = "strings"
+        strings_args = " " + self.vmcore + " | head -n10"
+        result = self.execute_cmd(strings_cmd, strings_args, 1)
+        print(result)
+        strings_lines = result.splitlines()
+        if strings_lines[0].strip() == "KDUMP": #need more checks here?
+            print("kdump matches")
+            for i in strings_lines:
+              if i.startswith("#") and "SMP" in i:
+                  minor_version = i.split()[0]
+                  minor_version = minor_version.split("-")[0].lstrip("#")
+                  print("minor version is.." , minor_version)
+                  break
         else:
-            # need to install the dbgsym
-            # first try with pull-lp-ddebs
-            pull_lp_cmd = "pull-lp-ddebs"
-            pull_lp_args = " linux-image-unsigned-" + kernel_version
-            fullcmd = pull_lp_cmd + pull_lp_args
-            print("sending command.. " , fullcmd)
-            #result = subprocess.check_output(fullcmd)
-            #running this from here as an exception due to the stderr stuff
-            result = subprocess.run(fullcmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            print(result)
-            print("just printed result")
-            if result.returncode == 0:
-                used_pull_lp_ddebs=1 # so we can delete the folder at exit
-                split_result = str(result.stdout).split("Downloading")[1]
-                print(split_result)
-                filename = split_result.lstrip().split()[0]
-                print(filename)
-                cmd = "mkdir"
-                args = " extract_folder"
-                output = self.execute_cmd(cmd, args,0)
-                cmd = "dpkg"
-                args = " -x " + filename + " extract_folder"
-                print("executing this command now ",cmd + args)
-                output = self.execute_cmd(cmd,args,0)
-                return "extract_folder/usr/lib/debug/boot/vmlinux-" + kernel_version
-            else:
-                #try apt-get install and pickup lib from /lib/debug/boot
-                used_apt_get=1 #so we can delete the file from cwd at exit time
-                cmd = "apt-get "
-                args = "install -y linux-image-" + kernel_version + "-dbgsym"
-                print(cmd + args)
-                print("sending that cmd off for execution")
-                output = self.execute_cmd(cmd, args,0)
-                #move the debug file into cwd
-                cmd = "cp "
-                args = "/lib/debug/boot/" + "vmlinux-" + kernel_version 
-                fullargs = args + " ."
-                fullcmd = cmd + fullargs
-                print(fullcmd)
-                if os.path.exists(args):
-                    print("doing cp now")
-                    print(cmd+args)
-                    output = self.execute_cmd(cmd,fullargs,0)
-                    return "vmlinux-" + kernel_version
-                else:
-                    print("did not find the dbgsym in /lib/debug/boot/ even though apt-get seemed to work!")
-                    return ""
+            print("Could not match kdump string\n")
+            exit()
+
+        pull_lp_cmd = "pull-lp-ddebs"
+        # for eg pull-lp-ddebs linux-image-unsigned-5.15.0-52-generic 5.15.0-52.58~20.04.1
+        kernel_version_minus_generic = kernel_version.split("-generic")[0] 
+        print("kernel version minus generic is",kernel_version_minus_generic)
+        pull_lp_args = " linux-image-unsigned-" + kernel_version + " " + kernel_version_minus_generic + "." + minor_version
+        fullcmd = pull_lp_cmd + pull_lp_args
+        print("sending command.. " , fullcmd)
+        #running this from here as an exception due to the stderr stuff
+        result = subprocess.run(fullcmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        print(result)
+        print("just printed result")
+        if result.returncode == 0:
+            split_result = str(result.stdout).split("Downloading")[1]
+            print(split_result)
+            self.filename = split_result.lstrip().split()[0]
+            print(self.filename)
+            cmd = "mkdir"
+            args = " extract_folder"
+            output = self.execute_cmd(cmd, args,0)
+            cmd = "dpkg"
+            args = " -x " + self.filename + " extract_folder"
+            print("executing this command now ",cmd + args)
+            output = self.execute_cmd(cmd,args,0)
+            return "extract_folder/usr/lib/debug/boot/vmlinux-" + kernel_version
+
     def cleanup(self, vmlinux):
         cmd = "rm -rf "
-        if self.used_apt_get == 1:
-            args = vmlinux
-            output = hotk.execute_cmd(cmd,args,0)
-            cmd = "apt-remove" 
-            args = "linux-image-" + vmlinux + "-dbgsym"
-            print("sending off this command now to remove the debugsym package",cmd+args)
-            output = hotk.execute_cmd(cmd,args,0)
-        elif self.used_pull_lp_ddebs == 1:
-            args = "extract_folder"
-            self.execute_cmd(cmd,args,0)
+        args = "extract_folder"
+        self.execute_cmd(cmd,args,0)
+        args = ".crashrc"
+        self.execute_cmd(cmd,args,0)
+        args = self.filename
+        self.execute_cmd(cmd,args,0)
         print("done with cleanup")
         
 def main():
@@ -221,14 +224,11 @@ def main():
     else:
         print("got this vmlinux from the function ",vmlinux)
         dump = hotk.vmcore
-        print(dump)
-        print("is dump\n")
-        print(vmlinux)
-        print("is vmlinux")
+        print("dump is .. \n",dump)
+        print("and vmlinux is " , vmlinux)
         args = str(dump) + " " + str(vmlinux)
         print("\n and args are")
         print(args)
-        logging.info("args to main are ...")
         logging.info(args)
 
         # todo move cmd to a class variable

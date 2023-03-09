@@ -1,0 +1,139 @@
+root@jammyvm:/home/nikhil/hotkdump/hotkdump# ./hotkdump.py -c 123 -d case-id-00355879-vmcore-dump.202303041856 
+Downloading vmcore for kernel 5.4.0-110-generic
+
+need to install dbgsym
+KDUMP   
+Linux
+prd-galerasyncpymts331
+5.4.0-110-generic
+#124-Ubuntu SMP Thu Apr 14 19:46:19 UTC 2022
+x86_64
+(none)
+CORE
+CORE
+CORE
+
+kdump matches
+minor version is.. 124
+kernel version minus generic is 5.4.0-110
+sending command..  pull-lp-ddebs linux-image-unsigned-5.4.0-110-generic 5.4.0-110.124
+
+
+CompletedProcess(args='pull-lp-ddebs linux-image-unsigned-5.4.0-110-generic 5.4.0-110.124', returncode=0, stdout=b"Source package lookup failed, trying lookup of binary package linux-image-unsigned-5.4.0-110-generic\nUsing source package 'linux' for binary package 'linux-image-unsigned-5.4.0-110-generic'\nFound linux 5.4.0-110.124 in focal\nPulling only binary package 'linux-image-unsigned-5.4.0-110-generic'\nUse package name 'linux' to pull all binary packages\nPlease wait, this may take some time...\nDownloading linux-image-unsigned-5.4.0-110-generic-dbgsym_5.4.0-110.124_amd64.ddeb from ddebs.ubuntu.com (923.921 MiB)\n")
+just printed result
+ linux-image-unsigned-5.4.0-110-generic-dbgsym_5.4.0-110.124_amd64.ddeb from ddebs.ubuntu.com (923.921 MiB)\n"
+linux-image-unsigned-5.4.0-110-generic-dbgsym_5.4.0-110.124_amd64.ddeb
+executing this command now  dpkg -x linux-image-unsigned-5.4.0-110-generic-dbgsym_5.4.0-110.124_amd64.ddeb extract_folder
+got this vmlinux from the function  extract_folder/usr/lib/debug/boot/vmlinux-5.4.0-110-generic
+dump is .. 
+ case-id-00355879-vmcore-dump.202303041856
+and vmlinux is  extract_folder/usr/lib/debug/boot/vmlinux-5.4.0-110-generic
+
+ and args are
+case-id-00355879-vmcore-dump.202303041856 extract_folder/usr/lib/debug/boot/vmlinux-5.4.0-110-generic
+Loading vmcore into crash.. please wait..
+Collected output of.. 
+
+sys 
+bt 
+log | grep -vi audit 
+kmem -i 
+dev -d 
+ps -m | grep UN | tail 
+
+See hotkdump.log for logs
+See hotkdump.out for output
+done with cleanup
+root@jammyvm:/home/nikhil/hotkdump/hotkdump# 
+root@jammyvm:/home/nikhil/hotkdump/hotkdump# 
+root@jammyvm:/home/nikhil/hotkdump/hotkdump# ls -lrta
+total 25436260
+-rw------- 1 nikhil nikhil 11139748610 Nov 22 08:39 dump.202211220833
+-rw------- 1 nikhil nikhil     1060823 Nov 22 08:39 dmesg.202211220833
+drwxrwxr-x 3 nikhil nikhil        4096 Mar  8 05:49 ..
+-rw-rw-r-- 1 nikhil nikhil         467 Mar  8 05:50 old_crashrc
+-rw-rw-r-- 1 nikhil nikhil       26321 Mar  8 05:50 how_to_run_and_output
+-rw-rw-r-- 1 nikhil nikhil        2720 Mar  8 05:50 README.md
+-rw-rw-r-- 1 nikhil nikhil       35149 Mar  8 05:50 LICENSE
+-rw-rw-r-- 1 nikhil nikhil 10185210270 Mar  8 06:50 crash_dump_202211220833.tar.gz
+-rwxr-xr-x 1 root   root     106978792 Mar  8 08:14 crash
+-rw-r--r-- 1 root   root    1098623672 Mar  8 08:40 vmlinux-5.15.0-52-generic
+-rw-rw-r-- 1 nikhil nikhil  3514725205 Mar  9 07:52 case-id-00355879-vmcore-dump.202303041856
+-rw-r--r-- 1 root   root             0 Mar  9 08:09 hotkdump.outquit
+drwxrwxr-x 8 nikhil nikhil        4096 Mar  9 09:24 .git
+-rwxrwxr-x 1 nikhil nikhil       10343 Mar  9 09:28 hotkdump.py
+-rw-r--r-- 1 root   root        173615 Mar  9 09:32 hotkdump.out
+drwxrwxr-x 3 nikhil nikhil        4096 Mar  9 09:32 .
+-rw-r--r-- 1 root   root         71700 Mar  9 09:32 hotkdump.log
+root@jammyvm:/home/nikhil/hotkdump/hotkdump# vi hotkdump.out
+root@jammyvm:/home/nikhil/hotkdump/hotkdump# cat hotkdump.out | head
+Output of sys
+
+      KERNEL: extract_folder/usr/lib/debug/boot/vmlinux-5.4.0-110-generic
+    DUMPFILE: case-id-00355879-vmcore-dump.202303041856  [PARTIAL DUMP]
+        CPUS: 40
+        DATE: Sat Mar  4 13:24:06 UTC 2023
+      UPTIME: 29 days, 01:47:51
+LOAD AVERAGE: 55.39, 51.07, 29.58
+       TASKS: 1321
+    NODENAME: prd-galerasyncpymts331
+root@jammyvm:/home/nikhil/hotkdump/hotkdump# ./hotkdump.py -c 123 -d dump.202211220833 
+Downloading vmcore for kernel 5.15.0-52-generic
+
+need to install dbgsym
+KDUMP   
+hc-hrrijf1-j304c7y6
+5.15.0-52-generic
+#58~20.04.1-Ubuntu SMP Thu Oct 13 13:09:46 UTC 2022
+x86_64
+(none)
+CORE
+CORE
+(8tP
+CORE
+
+kdump matches
+minor version is.. 58~20.04.1
+kernel version minus generic is 5.15.0-52
+sending command..  pull-lp-ddebs linux-image-unsigned-5.15.0-52-generic 5.15.0-52.58~20.04.1
+CompletedProcess(args='pull-lp-ddebs linux-image-unsigned-5.15.0-52-generic 5.15.0-52.58~20.04.1', returncode=0, stdout=b"Source package lookup failed, trying lookup of binary package linux-image-unsigned-5.15.0-52-generic\nUsing source package 'linux-hwe-5.15' for binary package 'linux-image-unsigned-5.15.0-52-generic'\nFound linux-hwe-5.15 5.15.0-52.58~20.04.1 in focal\nPulling only binary package 'linux-image-unsigned-5.15.0-52-generic'\nUse package name 'linux-hwe-5.15' to pull all binary packages\nPlease wait, this may take some time...\nDownloading linux-image-unsigned-5.15.0-52-generic-dbgsym_5.15.0-52.58~20.04.1_amd64.ddeb from ddebs.ubuntu.com (1295.525 MiB)\n")
+just printed result
+ linux-image-unsigned-5.15.0-52-generic-dbgsym_5.15.0-52.58~20.04.1_amd64.ddeb from ddebs.ubuntu.com (1295.525 MiB)\n"
+linux-image-unsigned-5.15.0-52-generic-dbgsym_5.15.0-52.58~20.04.1_amd64.ddeb
+executing this command now  dpkg -x linux-image-unsigned-5.15.0-52-generic-dbgsym_5.15.0-52.58~20.04.1_amd64.ddeb extract_folder
+got this vmlinux from the function  extract_folder/usr/lib/debug/boot/vmlinux-5.15.0-52-generic
+dump is .. 
+ dump.202211220833
+and vmlinux is  extract_folder/usr/lib/debug/boot/vmlinux-5.15.0-52-generic
+
+ and args are
+dump.202211220833 extract_folder/usr/lib/debug/boot/vmlinux-5.15.0-52-generic
+Loading vmcore into crash.. please wait..
+crash: inconsistent active task indications for CPU 16:
+           runqueue: ff40c4cb5513bf00 "etcd" (default)
+       current_task: ff40c479af570000 "jujud" (reassigned)
+
+Collected output of.. 
+
+sys 
+bt 
+log | grep -vi audit 
+kmem -i 
+dev -d 
+ps -m | grep UN | tail 
+
+See hotkdump.log for logs
+See hotkdump.out for output
+done with cleanup
+root@jammyvm:/home/nikhil/hotkdump/hotkdump# cat hotkdump.out | head
+Output of sys
+
+      KERNEL: extract_folder/usr/lib/debug/boot/vmlinux-5.15.0-52-generic  [TAINTED]
+    DUMPFILE: dump.202211220833  [PARTIAL DUMP]
+        CPUS: 128
+        DATE: Tue Nov 22 08:30:34 UTC 2022
+      UPTIME: 1 days, 10:12:40
+LOAD AVERAGE: 3488.84, 2455.29, 1213.61
+       TASKS: 22854
+    NODENAME: hc-hrrijf1-j304c7y6
+
