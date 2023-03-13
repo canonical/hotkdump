@@ -49,6 +49,12 @@ class hotkdump:
             crashrc_file.write("kmem -i >> hotkdump.out\n")
             crashrc_file.write("!echo \"\\nOutput of dev -d\\n\" >> hotkdump.out\n")
             crashrc_file.write("dev -d >> hotkdump.out\n")
+            crashrc_file.write("!echo \"\\nOutput of mount\\n\" >> hotkdump.out\n")
+            crashrc_file.write("mount >> hotkdump.out\n")
+            crashrc_file.write("!echo \"\\nOutput of files\\n\" >> hotkdump.out\n")
+            crashrc_file.write("files >> hotkdump.out\n")
+            crashrc_file.write("!echo \"\\nOutput of vm\\n\" >> hotkdump.out\n")
+            crashrc_file.write("vm >> hotkdump.out\n")
             crashrc_file.write("!echo \"\\nOldest blocked processes\\n\" >> hotkdump.out\n")
             crashrc_file.write("ps -m | grep UN | tail >> hotkdump.out\n")
             crashrc_file.write("quit >> hotkdump.out\n")
@@ -150,9 +156,9 @@ class hotkdump:
         print("just printed result")
         if result.returncode == 0:
             split_result = str(result.stdout).split("Downloading")[1]
-            print(split_result)
+            #print(split_result)
             self.filename = split_result.lstrip().split()[0]
-            print(self.filename)
+            print("filename is ",self.filename)
             cmd = "mkdir"
             args = " extract_folder"
             output = self.execute_cmd(cmd, args,0)
@@ -164,11 +170,7 @@ class hotkdump:
 
     def cleanup(self, vmlinux):
         cmd = "rm -rf "
-        args = "extract_folder"
-        self.execute_cmd(cmd,args,0)
-        args = ".crashrc"
-        self.execute_cmd(cmd,args,0)
-        args = self.filename
+        args = "extract_folder" + ".crashrc " + self.filename
         self.execute_cmd(cmd,args,0)
         print("done with cleanup")
         
