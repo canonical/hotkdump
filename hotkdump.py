@@ -13,40 +13,11 @@ from typing import Dict, List, Tuple, Union
 """
 TODOS:
 
-1) need rotom to figure out when a new vmcore is uploaded to files.canonical
-and for which case, for automatically updating the case without someone needing
-to manually run the script and pass in the casenum and vmcore name. 
-This will need a cron job.
+1) need to figure out when a new vmcore is uploaded to files.canonical
+and for which case, for automatically updating the case 
 
-2) need to download the vmcore debugsym using this approach, 
-
-$ strings dump.202211220833 | head -n5
-KDUMP
-hc-hrrijf1-j304c7y6
-5.15.0-52-generic
-#58~20.04.1-Ubuntu SMP Thu Oct 13 13:09:46 UTC 2022
-x86_64
-
-$ pull-lp-ddebs linux-image-unsigned-5.15.0-52-generic 5.15.0-52.58~20.04.1
-Source package lookup failed, trying lookup of binary package linux-image-unsigned-5.15.0-52-generic
-Using source package 'linux-hwe-5.15' for binary package 'linux-image-unsigned-5.15.0-52-generic'
-Found linux-hwe-5.15 5.15.0-52.58~20.04.1 in focal
-Pulling only binary package 'linux-image-unsigned-5.15.0-52-generic'
-Use package name 'linux-hwe-5.15' to pull all binary packages
-Please wait, this may take some time...
-Download Error: 503 Server Error: Service Unavailable for url: http://ddebs.ubuntu.com/pool/main/l/linux-hwe-5.15/linux-image-unsigned-5.15.0-52-generic-dbgsym_5.15.0-52.58~20.04.1_amd64.ddeb
-Downloading linux-image-unsigned-5.15.0-52-generic-dbgsym_5.15.0-52.58~20.04.1_amd64.ddeb from launchpadlibrarian.net (1295.525 MiB)
-[=====================================================>]100%
-
-Then extract it in a folder like so,
-
-$ mkdir extract_folder
-$ dpkg -x linux-image-unsigned-5.15.0-52-generic-dbgsym_5.15.0-52.58~20.04.1_amd64.ddeb extract_folder/
-
-And pick it up from extract_folder/usr/lib/debug/boot/ 
-
-
-Can also use this approach suggested by @mkg++
+noting an approach suggested by @mkg++ for getting version 
+for downloading debugsym
 
 import sys
 
@@ -92,13 +63,7 @@ version #58~20.04.1-Ubuntu SMP Thu Oct 13 13:09:46 UTC 2022
 machine x86_64
 domain (none)
 
-3) need to handover hotkdump.out to anyone who is consuming this tool, one consumer for eg 
-will update the case with an internal comment showing the auto analysis
-
-5) how often to purge, do we immediately delete the vmcore after we send off 
-the output file to athena? storage is an issue on rotom.. can we add more storage?
-
-6) leverage the filemover, and think about this as a generic application or a library
+2) leverage the filemover, and think about this as a generic application or a library
 
 """
 
@@ -106,7 +71,6 @@ the output file to athena? storage is an issue on rotom.. can we add more storag
 class hotkdump:
     vmcore = ""
     casenum = ""
-    cmd = "" 
     filename = ""
 
     def __init__(self):
@@ -194,10 +158,10 @@ class hotkdump:
         else:
             return result
 
-    def get_kernel_version(self, vmcore):
-        logging.info("in get_kernel_version with vmcore %s", vmcore)
+    def get_kernel_version(self):
+        logging.info("in get_kernel_version with vmcore %s", str(self.vmcore))
         cmd = "./crash -s"
-        args = " --osrelease " + str(vmcore) 
+        args = " --osrelease " + str(self.vmcore) 
         output = self.execute_cmd(cmd , args,1)
         logging.info("got this output from execute_cmd %s",str(output))
         return str(output)
@@ -254,6 +218,9 @@ class hotkdump:
             print("executing this command now ",cmd + args)
             output = self.execute_cmd(cmd,args,0)
             return "extract_folder/usr/lib/debug/boot/vmlinux-" + kernel_version
+        else:
+            print("Could not run pull_lp_ddebs...")
+            return ""
 
     def cleanup(self, vmlinux):
         cmd = "rm -rf "
@@ -265,7 +232,7 @@ def main():
     hotk = hotkdump()
 
     logging.info("%s is hotk.vmcore",hotk.vmcore)
-    kernel_version = hotk.get_kernel_version(str(hotk.vmcore))
+    kernel_version = hotk.get_kernel_version()
     logging.info("%s is kernel_version",kernel_version)
     vmlinux = hotk.download_vmlinux(kernel_version)
     if vmlinux == "": 
@@ -277,13 +244,9 @@ def main():
         print("dump is .. \n",dump)
         print("and vmlinux is " , vmlinux)
         args = str(dump) + " " + str(vmlinux)
-        print("\n and args are")
-        print(args)
+        print("\n and args are ", args)
         logging.info(args)
 
-        # todo move cmd to a class variable
-        # remove the -s if you want to see console output 
-        # of what crash is upto, in case there's a failure
         cmd = "./crash -s "
         print("Loading vmcore into crash.. please wait..")
         output = hotk.execute_cmd(cmd,args,0)
