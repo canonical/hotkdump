@@ -211,14 +211,15 @@ class hotkdump:
         check_cwd = "./vmlinux-" + kernel_version
         # need to install the dbgsym
         # get the minor release using strings
-        print("need to install dbgsym")
+        print("installing dbgsym")
         strings_cmd = "strings"
         strings_args = " " + self.vmcore + " | head -n10"
         result = self.execute_cmd(strings_cmd, strings_args, 1)
+        print("strings run on the vmcore has this..\n")
         print(result)
         strings_lines = result.splitlines()
         if strings_lines[0].strip() == "KDUMP": #need more checks here?
-            print("kdump matches")
+            print("found the KDUMP string at the beginning.")
             for i in strings_lines:
               if i.startswith("#") and "SMP" in i:
                   minor_version = i.split()[0]
@@ -235,7 +236,7 @@ class hotkdump:
         print("kernel version minus generic is",kernel_version_minus_generic)
         pull_lp_args = " linux-image-unsigned-" + kernel_version + " " + kernel_version_minus_generic + "." + minor_version
         fullcmd = pull_lp_cmd + pull_lp_args
-        print("sending command.. " , fullcmd)
+        print("command is.. " , fullcmd)
         #running this from here as an exception due to the stderr stuff
         result = subprocess.run(fullcmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         print(result)
@@ -256,7 +257,7 @@ class hotkdump:
 
     def cleanup(self, vmlinux):
         cmd = "rm -rf "
-        args = "extract_folder" + ".crashrc " + self.filename
+        args = "extract_folder" + " .crashrc " + self.filename
         self.execute_cmd(cmd,args,0)
         print("done with cleanup")
         
