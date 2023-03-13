@@ -182,15 +182,17 @@ class hotkdump:
         print("strings run on the vmcore has this..\n")
         print(result)
         strings_lines = result.splitlines()
+        found_version = 0
         for i in strings_lines:
             if i.startswith("#") and "SMP" in i:
               minor_version = i.split()[0]
               minor_version = minor_version.split("-")[0].lstrip("#")
               print("minor version is.." , minor_version)
+              found_version = 1
               break
-        else:
-            print("Could not match kdump string\n")
-            exit()
+        if found_version == 0:
+            print("could not find version string in the vmcore..")
+            return ""
 
         pull_lp_cmd = "pull-lp-ddebs"
         # for eg pull-lp-ddebs linux-image-unsigned-5.15.0-52-generic 5.15.0-52.58~20.04.1
