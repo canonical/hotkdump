@@ -131,14 +131,12 @@ class hotkdump:
         print("strings run on the vmcore has this..\n")
         print(result)
         strings_lines = result.splitlines()
-        if strings_lines[0].strip() == "KDUMP": #need more checks here?
-            print("found the KDUMP string at the beginning.")
-            for i in strings_lines:
-              if i.startswith("#") and "SMP" in i:
-                  minor_version = i.split()[0]
-                  minor_version = minor_version.split("-")[0].lstrip("#")
-                  print("minor version is.." , minor_version)
-                  break
+        for i in strings_lines:
+            if i.startswith("#") and "SMP" in i:
+              minor_version = i.split()[0]
+              minor_version = minor_version.split("-")[0].lstrip("#")
+              print("minor version is.." , minor_version)
+              break
         else:
             print("Could not match kdump string\n")
             exit()
