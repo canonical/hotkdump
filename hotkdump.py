@@ -20,7 +20,6 @@ Removed
 class hotkdump:
     vmcore = ""
     casenum = ""
-    cmd = "" 
     filename = ""
 
     def __init__(self):
@@ -108,10 +107,10 @@ class hotkdump:
         else:
             return result
 
-    def get_kernel_version(self, vmcore):
-        logging.info("in get_kernel_version with vmcore %s", vmcore)
+    def get_kernel_version(self):
+        logging.info("in get_kernel_version with vmcore %s", str(self.vmcore))
         cmd = "./crash -s"
-        args = " --osrelease " + str(vmcore) 
+        args = " --osrelease " + str(self.vmcore) 
         output = self.execute_cmd(cmd , args,1)
         logging.info("got this output from execute_cmd %s",str(output))
         return str(output)
@@ -125,14 +124,15 @@ class hotkdump:
         check_cwd = "./vmlinux-" + kernel_version
         # need to install the dbgsym
         # get the minor release using strings
-        print("need to install dbgsym")
+        print("installing dbgsym")
         strings_cmd = "strings"
         strings_args = " " + self.vmcore + " | head -n10"
         result = self.execute_cmd(strings_cmd, strings_args, 1)
+        print("strings run on the vmcore has this..\n")
         print(result)
         strings_lines = result.splitlines()
         if strings_lines[0].strip() == "KDUMP": #need more checks here?
-            print("kdump matches")
+            print("found the KDUMP string at the beginning.")
             for i in strings_lines:
               if i.startswith("#") and "SMP" in i:
                   minor_version = i.split()[0]
@@ -149,7 +149,7 @@ class hotkdump:
         print("kernel version minus generic is",kernel_version_minus_generic)
         pull_lp_args = " linux-image-unsigned-" + kernel_version + " " + kernel_version_minus_generic + "." + minor_version
         fullcmd = pull_lp_cmd + pull_lp_args
-        print("sending command.. " , fullcmd)
+        print("command is.. " , fullcmd)
         #running this from here as an exception due to the stderr stuff
         result = subprocess.run(fullcmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         print(result)
@@ -167,10 +167,13 @@ class hotkdump:
             print("executing this command now ",cmd + args)
             output = self.execute_cmd(cmd,args,0)
             return "extract_folder/usr/lib/debug/boot/vmlinux-" + kernel_version
+        else:
+            print("Could not run pull_lp_ddebs...")
+            return ""
 
     def cleanup(self, vmlinux):
         cmd = "rm -rf "
-        args = "extract_folder" + ".crashrc " + self.filename
+        args = "extract_folder" + " .crashrc " + self.filename
         self.execute_cmd(cmd,args,0)
         print("done with cleanup")
         
@@ -178,7 +181,7 @@ def main():
     hotk = hotkdump()
 
     logging.info("%s is hotk.vmcore",hotk.vmcore)
-    kernel_version = hotk.get_kernel_version(str(hotk.vmcore))
+    kernel_version = hotk.get_kernel_version()
     logging.info("%s is kernel_version",kernel_version)
     vmlinux = hotk.download_vmlinux(kernel_version)
     if vmlinux == "": 
@@ -190,13 +193,9 @@ def main():
         print("dump is .. \n",dump)
         print("and vmlinux is " , vmlinux)
         args = str(dump) + " " + str(vmlinux)
-        print("\n and args are")
-        print(args)
+        print("\n and args are ", args)
         logging.info(args)
 
-        # todo move cmd to a class variable
-        # remove the -s if you want to see console output 
-        # of what crash is upto, in case there's a failure
         cmd = "./crash -s "
         print("Loading vmcore into crash.. please wait..")
         output = hotk.execute_cmd(cmd,args,0)
