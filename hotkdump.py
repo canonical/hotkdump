@@ -168,7 +168,7 @@ class hotkdump:
 
     def download_vmlinux(self, kernel_version: str):
         minor_version = ""
-        print("Downloading vmcore for kernel", kernel_version)
+        print("Downloading vmlinux for kernel", kernel_version)
         logging.info("Downloading vmcore for kernel %s",kernel_version)
         cmd = "apt-get "
         kernel_version = kernel_version.rstrip()
