@@ -107,6 +107,8 @@ class hotkdump:
             crashrc_file.write("vm >> hotkdump.out\n")
             crashrc_file.write("!echo \"\\nOldest blocked processes\\n\" >> hotkdump.out\n")
             crashrc_file.write("ps -m | grep UN | tail >> hotkdump.out\n")
+            crashrc_file.write("!echo \"\\nTop 20 memory consumers\\n\" >> hotkdump.out\n")
+            crashrc_file.write("ps -G | sed 's/>//g' | sort -k 8,8 -n |  awk '$8 ~ /[0-9]/{ $8 = $8/1024\" MB\"; print }' | tail -20 | sort -r -k8,8 -g >> hotkdump.out\n")
             crashrc_file.write("quit >> hotkdump.out\n")
         crashrc_file.close()
         """
