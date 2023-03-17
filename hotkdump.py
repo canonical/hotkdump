@@ -65,6 +65,8 @@ domain (none)
 
 2) leverage the filemover, and think about this as a generic application or a library
 
+3) update cases with a internal comment of a link to hotkdump.out output
+
 """
 
 
@@ -269,7 +271,7 @@ def main():
         print("Collected output of.. \n")
         for line in all_crashrc_commands:
             if 'echo' not in line and 'quit' not in line:
-                line_to_print = line.split(">")[0]
+                line_to_print = line.split(">>")[0]
                 print(line_to_print)
         print("\nSee hotkdump.log for logs")
         print("See hotkdump.out for output")
