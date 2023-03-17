@@ -162,7 +162,16 @@ class hotkdump:
 
     def get_kernel_version(self):
         logging.info("in get_kernel_version with vmcore %s", str(self.vmcore))
-        cmd = "./crash -s"
+        cmd = ""
+        if os.path.exists("./crash"):
+            print("Found crash in current folder")
+            cmd = "./crash -s"
+        elif os.path.exists("usr/bin/crash"):
+            print("Found crash in \/usr\/bin \n")
+            cmd = "crash -s"
+        else:
+            print("hotkdump needs crash to be installed or placed in CWD")
+            return ""
         args = " --osrelease " + str(self.vmcore) 
         output = self.execute_cmd(cmd , args,1)
         logging.info("got this output from execute_cmd %s",str(output))
@@ -249,7 +258,10 @@ def main():
         print("\n and args are ", args)
         logging.info(args)
 
-        cmd = "./crash -s "
+        if os.path.exists("./crash"):
+          cmd = "./crash -s "
+        elif os.path.exists("/usr/bin/crash"):
+          cmd = "crash -s "
         print("Loading vmcore into crash.. please wait..")
         output = hotk.execute_cmd(cmd,args,0)
         file_crashrc = open('.crashrc', 'r')
