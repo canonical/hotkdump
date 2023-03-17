@@ -1,0 +1,6 @@
+.crashrc
+*.deb
+*.ddeb
+extract_folder/
+*.log
+*.out
