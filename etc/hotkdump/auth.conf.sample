@@ -1,0 +1,33 @@
+# This should be copied to /etc/hotkdump/hotkdump.conf.d/ or
+# ~/.hotkdump/hotkdump.conf.d/ and renamed to auth.conf
+
+[salesforce]
+
+# Username used to connect to Salesforce (string value)
+username = <your username>
+
+# Password used to connect to Salesforce (string value)
+password = <your password>
+
+# Security token used to connect to Salesforce (string value)
+security_token = <your security token>
+
+# Access token used to connect to Salesforce (string value)
+# access_token =
+
+# Salesforce instance URL to connect to; defaults to the
+# sandbox instance, not production (string value)
+instance = canonical--obiwan.my.salesforce.com
+domain = test
+# production values
+# instance = canonical.my.salesforce.com
+# domain = login
+
+# Client id to use when connecting to salesforce. The client id helps
+# disambiguate which clients are making API calls. You must define
+# this to the name of your bot (string value)
+client_id = hotkdump
+
+# Print log message every N salesforce queries (0 disables) (integer value)
+#log_per_queries = 500
+

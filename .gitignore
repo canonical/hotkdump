@@ -4,3 +4,7 @@
 extract_folder/
 *.log
 *.out
+__pycache__
+*.swp
+*.egg-info
+.tox

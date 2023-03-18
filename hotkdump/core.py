@@ -18,6 +18,9 @@ except ModuleNotFoundError:
 # am sure will need all this later
 from typing import Dict, List, Tuple, Union
 
+from oslo_config import cfg
+from oslo_log import log as oslo_logging
+import salesforce.client as sf
 
 """
 TODOS:
@@ -326,6 +329,9 @@ class hotkdump:
 def main():
     """Entry point for command-line invocations
     """
+    cfg.CONF([], project='hotkdump')
+    cfg.CONF.log_opt_values(logging.getLogger(__name__), logging.INFO)
+
     start = time.time()
     ap = argparse.ArgumentParser()
     ap.add_argument("-c", "--casenum",  required=True,
@@ -357,6 +363,10 @@ def main():
 
     diff = time.time() - start
     print(f"hotkdump took {round(diff, 2)} secs")
+
+    # post comment to SF case
+    sf_client = sf.SalesforceClient()
+    sf_client.post_comment_to_sf("00113539", "Hello World!")
 
 
 if __name__ == "__main__":
