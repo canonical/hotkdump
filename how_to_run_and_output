@@ -1,488 +1,584 @@
-root@rotom:/home/hotkdump# hotkdump_source/hotkdump/hotkdump.py -c 123 -d dump.202211291417 
-Downloading vmcore for kernel 5.15.0-52-generic
+# ls
+hotkdump.log  hotkdump.out  hotkdump.py  how_to_run_and_output  LICENSE  linux-image-unsigned-5.15.0-53-generic-dbgsym_5.15.0-53.59~20.04.1_amd64.ddeb  pykdump  README.md  TESTING
+root@nikhil-XPS-15-7590:/home/nikhil/hotkdump/hotkdump# which crash
+/usr/bin/crash
+#
 
-apt-get install -y linux-image-5.15.0-52-generic-dbgsym
-sending that cmd off for execution
-Reading package lists... Done
-Building dependency tree       
-Reading state information... Done
-The following packages were automatically installed and are no longer required:
-  linux-headers-5.4.0-126 linux-headers-5.4.0-126-generic linux-image-5.4.0-126-generic linux-modules-5.4.0-126-generic linux-modules-extra-5.4.0-126-generic
-Use 'apt autoremove' to remove them.
-The following additional packages will be installed:
-  linux-image-unsigned-5.15.0-52-generic-dbgsym
-The following NEW packages will be installed:
-  linux-image-5.15.0-52-generic-dbgsym linux-image-unsigned-5.15.0-52-generic-dbgsym
-0 upgraded, 2 newly installed, 0 to remove and 73 not upgraded.
-Need to get 1358 MB/1358 MB of archives.
-After this operation, 9966 MB of additional disk space will be used.
-Get:1 http://ddebs.ubuntu.com focal-updates/main amd64 linux-image-unsigned-5.15.0-52-generic-dbgsym amd64 5.15.0-52.58~20.04.1 [1358 MB]                                                                         
-Fetched 1330 MB in 8min 51s (2503 kB/s)                                                                                                                                                                           
-Selecting previously unselected package linux-image-unsigned-5.15.0-52-generic-dbgsym.
-(Reading database ... 247895 files and directories currently installed.)
-Preparing to unpack .../linux-image-unsigned-5.15.0-52-generic-dbgsym_5.15.0-52.58~20.04.1_amd64.ddeb ...
-Unpacking linux-image-unsigned-5.15.0-52-generic-dbgsym (5.15.0-52.58~20.04.1) ...
+Make sure crash is installed, or kept in current directory as a built binary.
 
+Download the vmcore you need analysed. Pass it in the second arg to hotkdump like so,
 
+# ./hotkdump.py -c 123 -d ../../Downloads/vmcore/202212171005/dump.202212171005 
+initializing hotkdump, SF#123, vmcore: ../../Downloads/vmcore/202212171005/dump.202212171005
+kernel version: 5.15.0-53-generic
+created /tmp/tmpyjo9dx8j temporary directory for the intermediary files
+The .ddeb file linux-image-unsigned-5.15.0-53-generic-dbgsym_5.15.0-53.59~20.04.1_amd64.ddeb already exists, re-using it
+Executing command: `dpkg -x linux-image-unsigned-5.15.0-53-generic-dbgsym_5.15.0-53.59~20.04.1_amd64.ddeb /tmp/tmpyjo9dx8j/ddeb-root`
+Loading `vmcore` file ../../Downloads/vmcore/202212171005/dump.202212171005 into `crash`, please wait..
+Executing command: `/usr/bin/crash -i /tmp/tmpyjo9dx8j/crash_commands -s ../../Downloads/vmcore/202212171005/dump.202212171005 /tmp/tmpyjo9dx8j/ddeb-root/usr/lib/debug/boot/vmlinux-5.15.0-53-generic`
+crash: inconsistent active task indications for CPU 11:
+           runqueue: ffffa0867570c000 "systemd" (default)
+       current_task: ffffa0800d82c000 "swapper/11" (reassigned)
 
+crash: inconsistent active task indications for CPU 13:
+           runqueue: ffffa08ab663a000 "handler5" (default)
+       current_task: ffffa0ca4eef2000 "filebeat" (reassigned)
 
-Selecting previously unselected package linux-image-5.15.0-52-generic-dbgsym.
-Preparing to unpack .../linux-image-5.15.0-52-generic-dbgsym_5.15.0-52.58~20.04.1_amd64.ddeb ...
-Unpacking linux-image-5.15.0-52-generic-dbgsym (5.15.0-52.58~20.04.1) ...
-Setting up linux-image-unsigned-5.15.0-52-generic-dbgsym (5.15.0-52.58~20.04.1) ...
-Setting up linux-image-5.15.0-52-generic-dbgsym (5.15.0-52.58~20.04.1) ...
-cp /lib/debug/boot/vmlinux-5.15.0-52-generic .
-doing cp now
-cp /lib/debug/boot/vmlinux-5.15.0-52-generic
-output 0
-dump.202211291417
-is dump
+crash: inconsistent active task indications for CPU 64:
+           runqueue: ffffa08bf7072000 "filebeat" (default)
+       current_task: ffffa0800de66000 "swapper/64" 
 
-vmlinux-5.15.0-52-generic
-is vmlinux
+crash: inconsistent active task indications for CPU 72:
+           runqueue: ffffa0cae9d54000 "filebeat" (default)
+       current_task: ffffa0c74d44e000 "swapper/72" (reassigned)
 
- and args are
-dump.202211291417 vmlinux-5.15.0-52-generic
-Loading vmcore into crash.. please wait..
-
-
-WARNING: kernel version inconsistency between vmlinux and dumpfile
-
-Collected output of.. 
-
-sys 
-bt  
-log | grep -vi audit 
-kmem -i 
-dev -d 
-ps -m | grep UN | tail 
+mount: invalid kernel virtual address: 0  type: "super_block buffer"
 
 See hotkdump.log for logs
-See hotkdump.out for output
-root@rotom:/home/hotkdump# 
-root@rotom:/home/hotkdump# 
-root@rotom:/home/hotkdump# ls /lib/debug/boot/vmlinux-5.15.0-52-generic ^C
-root@rotom:/home/hotkdump# cat hotkdump.out 
-      KERNEL: vmlinux-5.15.0-52-generic  [TAINTED]
-    DUMPFILE: dump.202211291417  [PARTIAL DUMP]
-        CPUS: 128
-        DATE: Tue Nov 29 14:13:54 UTC 2022
-      UPTIME: 1 days, 06:18:54
-LOAD AVERAGE: 5445.92, 2814.19, 1175.76
-       TASKS: 22918
-    NODENAME: hc-hrrijf1-j304c7y6
-     RELEASE: 5.15.0-52-generic
-     VERSION: #58~20.04.1+hotfix20221125b0-Ubuntu SMP Fri Nov 25 11:47:04 UTC 
-     MACHINE: x86_64  (2600 Mhz)
-      MEMORY: 511.7 GB
+See hotkdump.out for outputs
+
+----
+
+# cat hotkdump.out 
+Output of sys
+
+      KERNEL: /tmp/tmpyjo9dx8j/ddeb-root/usr/lib/debug/boot/vmlinux-5.15.0-53-generic  [TAINTED]
+    DUMPFILE: ../../Downloads/vmcore/202212171005/dump.202212171005  [PARTIAL DUMP]
+        CPUS: 88
+        DATE: Sat Dec 17 15:31:25 IST 2022
+      UPTIME: 11:32:35
+LOAD AVERAGE: 1438.75, 731.09, 299.01
+       TASKS: 15930
+    NODENAME: ic-hrzagt4-s4apy089
+     RELEASE: 5.15.0-53-generic
+     VERSION: #59~20.04.1-Ubuntu SMP Thu Oct 20 15:10:22 UTC 2022
+     MACHINE: x86_64  (2100 Mhz)
+      MEMORY: 575.7 GB
        PANIC: "Kernel panic - not syncing: hung_task: blocked tasks"
 
 Output of bt
 
-PID: 792      TASK: ff2b6e1d4981bf00  CPU: 99   COMMAND: "khungtaskd"
- #0 [ff2ee9794e7ebd10] machine_kexec at ffffffff99e8aea0
- #1 [ff2ee9794e7ebd70] __crash_kexec at ffffffff99f98732
- #2 [ff2ee9794e7ebe40] panic at ffffffff9aabe4d5
- #3 [ff2ee9794e7ebec0] watchdog.cold at ffffffff9aace806
- #4 [ff2ee9794e7ebf10] kthread at ffffffff99ee87d7
- #5 [ff2ee9794e7ebf50] ret_from_fork at ffffffff99e04c5f
+PID: 551    TASK: ffffa08010e20000  CPU: 75  COMMAND: "khungtaskd"
+ #0 [ffffac86da457d10] machine_kexec at ffffffffac28afd0
+ #1 [ffffac86da457d70] __crash_kexec at ffffffffac398582
+ #2 [ffffac86da457e40] panic at ffffffffacebf4f5
+ #3 [ffffac86da457ec0] watchdog.cold at ffffffffacecf81a
+ #4 [ffffac86da457f10] kthread at ffffffffac2e8787
+ #5 [ffffac86da457f50] ret_from_fork at ffffffffac204c3f
 
 Output of log with audit messages filtered out
 
-[99509.299740] loop9: detected capacity change from 0 to 101624
-[99511.619969] loop10: detected capacity change from 0 to 238984
-[99513.349642] loop11: detected capacity change from 0 to 8
-[109075.769537] mlx5_core 0000:31:00.0: modify lag map port 1:2 port 2:2
-[109078.957437] mlx5_core 0000:31:00.0: modify lag map port 1:1 port 2:2
-[109164.814436] INFO: task jbd2/dm-2-8:4914 blocked for more than 120 seconds.
-[109164.897856]       Tainted: P           O      5.15.0-52-generic #58~20.04.1+hotfix20221125b0-Ubuntu
-[109165.007211] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[109165.102005] task:jbd2/dm-2-8     state:D stack:    0 pid: 4914 ppid:     2 flags:0x00004000
-[109165.203034] Call Trace:
-[109165.233318]  <TASK>
-[109165.259436]  __schedule+0x2cd/0x8a0
-[109165.302240]  ? raw_spin_rq_lock_nested.part.0+0x2b/0x60
-[109165.365817]  schedule+0x4e/0xc0
-[109165.404420]  jbd2_journal_commit_transaction+0x303/0x1900
-[109165.470076]  ? __update_idle_core+0xe5/0x120
-[109165.522209]  ? wait_woken+0x60/0x60
-[109165.564976]  ? lock_timer_base+0x3b/0xd0
-[109165.612942]  ? try_to_del_timer_sync+0x54/0x90
-[109165.667160]  kjournald2+0xb6/0x290
-[109165.708886]  ? wait_woken+0x60/0x60
-[109165.751658]  ? commit_timeout+0x20/0x20
-[109165.798595]  kthread+0x127/0x150
-[109165.838246]  ? set_kthread_struct+0x50/0x50
-[109165.889335]  ret_from_fork+0x1f/0x30
-[109165.933147]  </TASK>
-[109165.997430] INFO: task node_exporter:6109 blocked for more than 122 seconds.
-[109166.082905]       Tainted: P           O      5.15.0-52-generic #58~20.04.1+hotfix20221125b0-Ubuntu
-[109166.192281] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[109166.287086] task:node_exporter   state:D stack:    0 pid: 6109 ppid:     1 flags:0x00000224
-[109166.388139] Call Trace:
-[109166.418423]  <TASK>
-[109166.444548]  __schedule+0x2cd/0x8a0
-[109166.487330]  schedule+0x4e/0xc0
-[109166.525935]  rwsem_down_read_slowpath+0x179/0x3a0
-[109166.583269]  down_read+0x43/0xa0
-[109166.622916]  do_user_addr_fault+0x3f2/0x660
-[109166.674019]  ? ksys_read+0xd2/0xf0
-[109166.715746]  exc_page_fault+0x77/0x170
-[109166.761637]  asm_exc_page_fault+0x26/0x30
-[109166.810644] RIP: 0033:0x45e360
-[109166.848220] RSP: 002b:000000c000f99e38 EFLAGS: 00010202
-[109166.911803] RAX: 0000000000a52b00 RBX: 0000000000a50000 RCX: 0000000000a52b00
-[109166.998256] RDX: 000000000115a880 RSI: 0000000000d0a860 RDI: 0000000000000000
-[109167.084709] RBP: 000000c000f99ee8 R08: 0000000000000000 R09: 0000000000000000
-[109167.171166] R10: 0000000000000003 R11: 0000000000b0c2c0 R12: 0000000000000003
-[109167.258184] R13: 000000c000001200 R14: 000000c00158d6e0 R15: 0000000000000000
-[109167.345319]  </TASK>
-[109167.373072] INFO: task node_exporter:6121 blocked for more than 123 seconds.
-[109167.459298]       Tainted: P           O      5.15.0-52-generic #58~20.04.1+hotfix20221125b0-Ubuntu
-[109167.569201] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[109167.664517] task:node_exporter   state:D stack:    0 pid: 6121 ppid:     1 flags:0x00000220
-[109167.766075] Call Trace:
-[109167.796954]  <TASK>
-[109167.823586]  __schedule+0x2cd/0x8a0
-[109167.866846]  schedule+0x4e/0xc0
-[109167.905924]  rwsem_down_read_slowpath+0x179/0x3a0
-[109167.963762]  ? copy_user_enhanced_fast_string+0xe/0x40
-[109168.026769]  down_read+0x43/0xa0
-[109168.066857]  do_user_addr_fault+0x3f2/0x660
-[109168.118422]  exc_page_fault+0x77/0x170
-[109168.164801]  asm_exc_page_fault+0x26/0x30
-[109168.214291] RIP: 0010:copy_user_enhanced_fast_string+0xe/0x40
-[109168.284557] Code: 89 d1 c1 e9 03 83 e2 07 f3 48 a5 89 d1 f3 a4 31 c0 0f 01 ca c3 cc cc cc cc 0f 1f 00 0f 01 cb 83 fa 40 0f 82 70 ff ff ff 89 d1 <f3> a4 31 c0 0f 01 ca c3 cc cc cc cc 66 0f 1f 44 00 00 89 d1 83 f8
-[109168.511429] RSP: 0018:ff2ee97963d37a20 EFLAGS: 00050206
-[109168.575525] RAX: 000000c000a200be RBX: 00000000000000be RCX: 00000000000000be
-[109168.662464] RDX: 00000000000000be RSI: ff2b6e224c6b8c82 RDI: 000000c000a20000
-[109168.749402] RBP: ff2ee97963d37a28 R08: 00000000000000be R09: ffffffff9a8a39e0
-[109168.836380] R10: 0000000000000121 R11: 0000000000000000 R12: ff2ee97963d37dd8
-[109168.923365] R13: 0000000000000000 R14: ff2ee97963d37dd8 R15: 00000000000000be
-[109169.010356]  ? __skb_wait_for_more_packets+0x180/0x180
-[109169.073424]  ? copyout+0x20/0x40
-[109169.113614]  _copy_to_iter+0x98/0x6a0
-[109169.158994]  simple_copy_to_iter+0x39/0x50
-[109169.209554]  __skb_datagram_iter+0x78/0x2e0
-[109169.261136]  ? __skb_wait_for_more_packets+0x180/0x180
-[109169.324159]  skb_copy_datagram_iter+0x38/0x80
-[109169.377810]  tcp_recvmsg_locked+0x689/0x9f0
-[109169.429395]  ? __schedule+0x2d5/0x8a0
-[109169.474740]  tcp_recvmsg+0xac/0x1c0
-[109169.517927]  ? __cond_resched+0x19/0x40
-[109169.565377]  ? aa_sk_perm+0x43/0x1c0
-[109169.609671]  ? ep_poll+0x519/0x6a0
-[109169.651885]  inet6_recvmsg+0x5c/0x110
-[109169.697220]  ? security_socket_recvmsg+0x3a/0x60
-[109169.753997]  sock_recvmsg+0x58/0x80
-[109169.797300]  sock_read_iter+0x8f/0xf0
-[109169.842637]  new_sync_read+0x184/0x1a0
-[109169.889010]  vfs_read+0x102/0x1a0
-[109169.930174]  ksys_read+0xb5/0xf0
-[109169.970392]  ? syscall_trace_enter.isra.0+0xa4/0x1c0
-[109170.031258]  __x64_sys_read+0x1a/0x20
-[109170.076563]  do_syscall_64+0x59/0xc0
-[109170.120861]  ? irqentry_exit_to_user_mode+0x9/0x20
-[109170.179689]  ? irqentry_exit+0x1d/0x30
-[109170.226026]  ? sysvec_call_function+0x4e/0x90
-[109170.279706]  entry_SYSCALL_64_after_hwframe+0x61/0xcb
-[109170.341653] RIP: 0033:0x4b25fb
-[109170.379681] RSP: 002b:000000c00118f680 EFLAGS: 00000206 ORIG_RAX: 0000000000000000
-[109170.471791] RAX: ffffffffffffffda RBX: 000000c00003e000 RCX: 00000000004b25fb
-[109170.558724] RDX: 0000000000001000 RSI: 000000c000a20000 RDI: 0000000000000009
-[109170.645633] RBP: 000000c00118f6d0 R08: 00007ffe3458b001 R09: 000000000001a970
-[109170.732548] R10: 00007ffe3458b090 R11: 0000000000000206 R12: 0000000000000003
-[109170.819473] R13: 000000c000c02180 R14: 0000000000000001 R15: 0000000000000000
-[109170.906387]  </TASK>
-[109170.934023] INFO: task node_exporter:6123 blocked for more than 126 seconds.
-[109171.021404]       Tainted: P           O      5.15.0-52-generic #58~20.04.1+hotfix20221125b0-Ubuntu
-[109171.131305] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[109171.226588] task:node_exporter   state:D stack:    0 pid: 6123 ppid:     1 flags:0x00000224
-[109171.328143] Call Trace:
-[109171.358928]  <TASK>
-[109171.385526]  __schedule+0x2cd/0x8a0
-[109171.428773]  schedule+0x4e/0xc0
-[109171.467831]  rwsem_down_read_slowpath+0x179/0x3a0
-[109171.525623]  ? switch_fpu_return+0x4e/0xc0
-[109171.576127]  down_read+0x43/0xa0
-[109171.616220]  do_user_addr_fault+0x3f2/0x660
-[109171.667759]  exc_page_fault+0x77/0x170
-[109171.714055]  asm_exc_page_fault+0x26/0x30
-[109171.763547] RIP: 0033:0x43036e
-[109171.801516] RSP: 002b:000000c000ec9650 EFLAGS: 00010246
-[109171.865527] RAX: 0000000000000001 RBX: 00000000004373a0 RCX: 00007f668a1cad50
-[109171.952437] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
-[109172.039335] RBP: 000000c000ec9678 R08: 00007ffe3458b001 R09: 000000000001a96e
-[109172.126208] R10: 00007ffe3458b090 R11: 00000000033e195a R12: 0000000000000003
-[109172.213196] R13: 000000c000c02480 R14: 0000630cb776f03b R15: 000000c0012b47e0
-[109172.300092]  </TASK>
-[109172.327692] INFO: task node_exporter:6126 blocked for more than 128 seconds.
-[109172.413834]       Tainted: P           O      5.15.0-52-generic #58~20.04.1+hotfix20221125b0-Ubuntu
-[109172.523773] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[109172.619071] task:node_exporter   state:D stack:    0 pid: 6126 ppid:     1 flags:0x00000220
-[109172.720611] Call Trace:
-[109172.751404]  <TASK>
-[109172.778017]  __schedule+0x2cd/0x8a0
-[109172.821284]  schedule+0x4e/0xc0
-[109172.860398]  rwsem_down_read_slowpath+0x179/0x3a0
-[109172.918242]  ? copy_user_enhanced_fast_string+0xe/0x40
-[109172.981378]  down_read+0x43/0xa0
-[109173.021528]  do_user_addr_fault+0x3f2/0x660
-[109173.073130]  exc_page_fault+0x77/0x170
-[109173.119523]  asm_exc_page_fault+0x26/0x30
-[109173.169038] RIP: 0010:copy_user_enhanced_fast_string+0xe/0x40
-[109173.239362] Code: 89 d1 c1 e9 03 83 e2 07 f3 48 a5 89 d1 f3 a4 31 c0 0f 01 ca c3 cc cc cc cc 0f 1f 00 0f 01 cb 83 fa 40 0f 82 70 ff ff ff 89 d1 <f3> a4 31 c0 0f 01 ca c3 cc cc cc cc 66 0f 1f 44 00 00 89 d1 83 f8
-[109173.466181] RSP: 0018:ff2ee9796336ba20 EFLAGS: 00050206
-[109173.530400] RAX: 000000c0003a70be RBX: 00000000000000be RCX: 00000000000000be
-[109173.617397] RDX: 00000000000000be RSI: ff2b6e2044fa0882 RDI: 000000c0003a7000
-[109173.704390] RBP: ff2ee9796336ba28 R08: 00000000000000be R09: ffffffff9a8a39e0
-[109173.791389] R10: 00000000000000f6 R11: 0000000000000000 R12: ff2ee9796336bdd8
-[109173.878360] R13: 0000000000000000 R14: ff2ee9796336bdd8 R15: 00000000000000be
-[109173.965298]  ? __skb_wait_for_more_packets+0x180/0x180
-[109174.028393]  ? copyout+0x20/0x40
-[109174.068523]  _copy_to_iter+0x98/0x6a0
-[109174.113910]  ? __update_idle_core+0xe5/0x120
-[109174.166570]  simple_copy_to_iter+0x39/0x50
-[109174.217138]  __skb_datagram_iter+0x78/0x2e0
-[109174.268733]  ? __skb_wait_for_more_packets+0x180/0x180
-[109174.331766]  ? finish_task_switch+0x82/0x2a0
-[109174.384388]  skb_copy_datagram_iter+0x38/0x80
-[109174.438068]  tcp_recvmsg_locked+0x689/0x9f0
-[109174.489725]  tcp_recvmsg+0xac/0x1c0
-[109174.532989]  ? __cond_resched+0x19/0x40
-[109174.580424]  ? aa_sk_perm+0x43/0x1c0
-[109174.624736]  inet6_recvmsg+0x5c/0x110
-[109174.670081]  ? security_socket_recvmsg+0x3a/0x60
-[109174.726879]  sock_recvmsg+0x58/0x80
-[109174.770156]  sock_read_iter+0x8f/0xf0
-[109174.815580]  new_sync_read+0x184/0x1a0
-[109174.861965]  vfs_read+0x102/0x1a0
-[109174.903121]  ksys_read+0xb5/0xf0
-[109174.943220]  ? syscall_trace_enter.isra.0+0xa4/0x1c0
-[109175.004147]  __x64_sys_read+0x1a/0x20
-[109175.049473]  do_syscall_64+0x59/0xc0
-[109175.093731]  ? syscall_exit_to_user_mode+0x27/0x50
-[109175.152583]  ? do_syscall_64+0x69/0xc0
-[109175.198947]  ? do_syscall_64+0x69/0xc0
-[109175.245294]  ? sysvec_apic_timer_interrupt+0x4e/0x90
-[109175.306199]  entry_SYSCALL_64_after_hwframe+0x61/0xcb
-[109175.368178] RIP: 0033:0x4b25fb
-[109175.406177] RSP: 002b:000000c00152d680 EFLAGS: 00000206 ORIG_RAX: 0000000000000000
-[109175.498349] RAX: ffffffffffffffda RBX: 000000c00003e000 RCX: 00000000004b25fb
-[109175.585255] RDX: 0000000000001000 RSI: 000000c0003a7000 RDI: 0000000000000007
-[109175.672148] RBP: 000000c00152d6d0 R08: 0000000000000001 R09: 00000000011d5070
-[109175.759060] R10: 0000000000000072 R11: 0000000000000206 R12: 0000000000000003
-[109175.845959] R13: 000000c000d88180 R14: 000000c00158d680 R15: 0000000000000000
-[109175.932882]  </TASK>
-[109175.960520] INFO: task node_exporter:13132 blocked for more than 131 seconds.
-[109176.048800]       Tainted: P           O      5.15.0-52-generic #58~20.04.1+hotfix20221125b0-Ubuntu
-[109176.158730] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[109176.254023] task:node_exporter   state:D stack:    0 pid:13132 ppid:     1 flags:0x00000224
-[109176.355599] Call Trace:
-[109176.386378]  <TASK>
-[109176.412933]  __schedule+0x2cd/0x8a0
-[109176.456177]  schedule+0x4e/0xc0
-[109176.495237]  rwsem_down_read_slowpath+0x179/0x3a0
-[109176.553028]  down_read+0x43/0xa0
-[109176.593129]  do_user_addr_fault+0x3f2/0x660
-[109176.644671]  exc_page_fault+0x77/0x170
-[109176.690985]  asm_exc_page_fault+0x26/0x30
-[109176.740430] RIP: 0033:0x43036e
-[109176.778388] RSP: 002b:000000c0002138e8 EFLAGS: 00010246
-[109176.842401] RAX: 0000000000000001 RBX: 00000000004373a0 RCX: 00007f668a1cae30
-[109176.929308] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000000
-[109177.016208] RBP: 000000c000213910 R08: 00007ffe3458b001 R09: 000000000001a976
-[109177.103176] R10: 00007ffe3458b090 R11: 00000000033e2848 R12: 0000000000000003
-[109177.190123] R13: 000000c000d14480 R14: 000000000000004b R15: 0000000000000066
-[109177.277024]  </TASK>
-[109177.304721] INFO: task lxcfs:3280487 blocked for more than 133 seconds.
-[109177.386963]       Tainted: P           O      5.15.0-52-generic #58~20.04.1+hotfix20221125b0-Ubuntu
-[109177.496824] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[109177.592064] task:lxcfs           state:D stack:    0 pid:3280487 ppid:     1 flags:0x00000000
-[109177.695663] Call Trace:
-[109177.726435]  <TASK>
-[109177.753051]  __schedule+0x2cd/0x8a0
-[109177.796314]  schedule+0x4e/0xc0
-[109177.835392]  rwsem_down_read_slowpath+0x179/0x3a0
-[109177.893143]  ? syscall_exit_to_user_mode+0x27/0x50
-[109177.952011]  down_read+0x43/0xa0
-[109177.992143]  do_user_addr_fault+0x3f2/0x660
-[109178.043730]  exc_page_fault+0x77/0x170
-[109178.090112]  asm_exc_page_fault+0x26/0x30
-[109178.139612] RIP: 0033:0x7f30fd4f3f3a
-[109178.183869] RSP: 002b:00007f30f4ff8df0 EFLAGS: 00010216
-[109178.247937] RAX: 0000000000000000 RBX: 0000000000000030 RCX: 00007f30fd4cb3cc
-[109178.334888] RDX: 0000000000101000 RSI: 00007f2f3c0008d0 RDI: 000055f8b832ed90
-[109178.421844] RBP: 000055f8b832ed90 R08: 0000000000000000 R09: 00007f2f3c112da4
-[109178.508802] R10: 000055f8b832ea68 R11: 0000000000000000 R12: 00007f2de0106490
-[109178.595754] R13: 0000000000000000 R14: 00007f30f4ff9680 R15: 0000000000000002
-[109178.682694]  </TASK>
-[109178.710360] INFO: task lxcfs:3281506 blocked for more than 134 seconds.
-[109178.792924]       Tainted: P           O      5.15.0-52-generic #58~20.04.1+hotfix20221125b0-Ubuntu
-[109178.902778] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[109178.998087] task:lxcfs           state:D stack:    0 pid:3281506 ppid:     1 flags:0x00004000
-[109179.101778] Call Trace:
-[109179.132590]  <TASK>
-[109179.159203]  __schedule+0x2cd/0x8a0
-[109179.202461]  ? __update_load_avg_se+0x261/0x2c0
-[109179.258107]  schedule+0x4e/0xc0
-[109179.297185]  rwsem_down_read_slowpath+0x179/0x3a0
-[109179.355008]  ? raw_spin_rq_lock_nested+0x1b/0x30
-[109179.411712]  down_read+0x43/0xa0
-[109179.451784]  get_user_pages_unlocked+0x67/0x340
-[109179.507456]  internal_get_user_pages_fast+0x292/0x320
-[109179.569435]  get_user_pages_fast+0x24/0x50
-[109179.619974]  iov_iter_get_pages+0xe7/0x3d0
-[109179.670514]  fuse_copy_fill+0x138/0x190
-[109179.717840]  fuse_copy_one+0x2b/0x60
-[109179.762136]  fuse_dev_do_read.isra.0+0x5a1/0x870
-[109179.819000]  ? wait_woken+0x60/0x60
-[109179.862251]  fuse_dev_read+0x5f/0xa0
-[109179.906608]  new_sync_read+0x10d/0x1a0
-[109179.952967]  vfs_read+0x102/0x1a0
-[109179.994131]  ksys_read+0x67/0xf0
-[109180.034264]  __x64_sys_read+0x1a/0x20
-[109180.079652]  do_syscall_64+0x59/0xc0
-[109180.123917]  ? syscall_exit_to_user_mode+0x27/0x50
-[109180.182737]  ? __x64_sys_writev+0x1c/0x30
-[109180.232169]  ? do_syscall_64+0x69/0xc0
-[109180.278478]  ? irqentry_exit+0x1d/0x30
-[109180.324791]  ? exc_page_fault+0x89/0x170
-[109180.373183]  entry_SYSCALL_64_after_hwframe+0x61/0xcb
-[109180.435125] RIP: 0033:0x7f30fd4cb3cc
-[109180.479382] RSP: 002b:00007f30f7ffedc0 EFLAGS: 00000246 ORIG_RAX: 0000000000000000
-[109180.571477] RAX: ffffffffffffffda RBX: 0000000000000038 RCX: 00007f30fd4cb3cc
-[109180.658390] RDX: 0000000000101000 RSI: 00007f2de00008d0 RDI: 0000000000000013
-[109180.745394] RBP: 000055f8b832ed90 R08: 0000000000000000 R09: 00007f30f7ffeb88
-[109180.832323] R10: 0000000000000000 R11: 0000000000000246 R12: 00007f3068101900
-[109180.919252] R13: 0000000000000000 R14: 00007f30f7fff680 R15: 00007f30f7ffefc0
-[109181.006178]  </TASK>
-[109181.033928] INFO: task lxcfs:3281972 blocked for more than 137 seconds.
-[109181.114989]       Tainted: P           O      5.15.0-52-generic #58~20.04.1+hotfix20221125b0-Ubuntu
-[109181.225020] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[109181.320330] task:lxcfs           state:D stack:    0 pid:3281972 ppid:     1 flags:0x00000000
-[109181.423979] Call Trace:
-[109181.454770]  <TASK>
-[109181.481359]  __schedule+0x2cd/0x8a0
-[109181.524561]  schedule+0x4e/0xc0
-[109181.563626]  rwsem_down_read_slowpath+0x179/0x3a0
-[109181.621435]  ? exit_to_user_mode_prepare+0x9c/0x1c0
-[109181.681304]  ? __do_fast_syscall_32+0xd0/0xf0
-[109181.734862]  down_read+0x43/0xa0
-[109181.774897]  do_user_addr_fault+0x3f2/0x660
-[109181.826403]  exc_page_fault+0x77/0x170
-[109181.872833]  asm_exc_page_fault+0x26/0x30
-[109181.922289] RIP: 0033:0x7f30fd4f3f3a
-[109181.966617] RSP: 002b:00007f30fca66df0 EFLAGS: 00010216
-[109182.030643] RAX: 0000000000000000 RBX: 0000000000000030 RCX: 00007f30fd4cb3cc
-[109182.117546] RDX: 0000000000101000 RSI: 00007f2f080008d0 RDI: 000055f8b832ed90
-[109182.204418] RBP: 000055f8b832ed90 R08: 0000000000000000 R09: 00007f30fca66bb0
-[109182.291312] R10: 0000000000000000 R11: 0000000000000000 R12: 00007f2e0c101900
-[109182.378151] R13: 0000000000000000 R14: 00007f30fca67680 R15: 0000000000000002
-[109182.465079]  </TASK>
-[109182.492731] INFO: task lxcfs:3281988 blocked for more than 138 seconds.
-[109182.574819]       Tainted: P           O      5.15.0-52-generic #58~20.04.1+hotfix20221125b0-Ubuntu
-[109182.684702] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[109182.780000] task:lxcfs           state:D stack:    0 pid:3281988 ppid:     1 flags:0x00000000
-[109182.883604] Call Trace:
-[109182.914355]  <TASK>
-[109182.941047]  __schedule+0x2cd/0x8a0
-[109182.984316]  schedule+0x4e/0xc0
-[109183.023428]  rwsem_down_read_slowpath+0x179/0x3a0
-[109183.081263]  ? ksys_read+0x90/0xf0
-[109183.123498]  down_read+0x43/0xa0
-[109183.163649]  do_user_addr_fault+0x3f2/0x660
-[109183.215239]  exc_page_fault+0x77/0x170
-[109183.261557]  asm_exc_page_fault+0x26/0x30
-[109183.311069] RIP: 0033:0x7f30fd4cb3d7
-[109183.355380] RSP: 002b:00007f3010ff8dc0 EFLAGS: 00010207
-[109183.419464] RAX: 0000000000000030 RBX: 0000000000000050 RCX: 00007f30fd4cb3cc
-[109183.506424] RDX: 0000000000101000 RSI: 00007f2ff40008d0 RDI: 0000000000000000
-[109183.593479] RBP: 000055f8b832ed90 R08: 0000000000000000 R09: 0000000000000008
-[109183.680391] R10: 00007f3010ff8c30 R11: 0000000000000246 R12: 00007f2f181065c0
-[109183.767338] R13: 0000000000000000 R14: 00007f3010ff9680 R15: 00007f3010ff8fc0
-[109183.854291]  </TASK>
-[109183.889198] Kernel panic - not syncing: hung_task: blocked tasks
-[109183.962633] CPU: 99 PID: 792 Comm: khungtaskd Kdump: loaded Tainted: P           O      5.15.0-52-generic #58~20.04.1+hotfix20221125b0-Ubuntu
-[109184.117249] Hardware name: Lenovo ThinkSystem SR650 V2/7Z73CTO1WW, BIOS AFE118M-1.32 06/29/2022
-[109184.223082] Call Trace:
-[109184.254010]  <TASK>
-[109184.280747]  dump_stack_lvl+0x4a/0x63
-[109184.326202]  dump_stack+0x10/0x16
-[109184.367504]  panic+0x149/0x321
-[109184.405685]  watchdog.cold+0x29/0x118
-[109184.451151]  ? hungtask_pm_notify+0x50/0x50
-[109184.502869]  kthread+0x127/0x150
-[109184.543129]  ? set_kthread_struct+0x50/0x50
-[109184.594836]  ret_from_fork+0x1f/0x30
-[109184.639258]  </TASK>
+[165345.967437] INFO: task safe_timer:24518 blocked for more than 120 seconds.
+[165346.050845]       Tainted: P           O      5.15.0-53-generic #59~20.04.1-Ubuntu
+[165346.142529] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[165346.237337] task:safe_timer      state:D stack:    0 pid:24518 ppid: 20824 flags:0x00000220
+[165346.338384] Call Trace:
+[165346.368676]  <TASK>
+[165346.394813]  __schedule+0x2cd/0x890
+[165346.437594]  schedule+0x69/0x110
+[165346.477255]  rwsem_down_read_slowpath+0x179/0x3a0
+[165346.534605]  down_read+0x43/0xa0
+[165346.574254]  do_user_addr_fault+0x3f2/0x660
+[165346.625366]  ? exit_to_user_mode_prepare+0x9c/0x1c0
+[165346.684791]  exc_page_fault+0x77/0x170
+[165346.730692]  asm_exc_page_fault+0x27/0x30
+[165346.779704] RIP: 0033:0x7f2c03296f75
+[165346.823513] RSP: 002b:00007f2bee7fbcb0 EFLAGS: 00010246
+[165346.887093] RAX: 00007f2bee7fc700 RBX: 00007f2bf4083380 RCX: 0000000000000000
+[165346.973555] RDX: 0000000000000000 RSI: 00007f2bee7fbda0 RDI: 00007f2bee7fbda0
+[165347.060012] RBP: f0f0f0f0f0f0f0f1 R08: 0000000000000000 R09: 00007f2bf411bfc0
+[165347.146468] R10: 00007fff52d30080 R11: 0000000004e8dce6 R12: 00007f2bee7fbda0
+[165347.232924] R13: 00007f2c0f3aac10 R14: 00007f2bf4010e80 R15: 00007f2bf40833c0
+[165347.319385]  </TASK>
+[165347.347870] INFO: task msgr-worker-0:24586 blocked for more than 122 seconds.
+[165347.434504]       Tainted: P           O      5.15.0-53-generic #59~20.04.1-Ubuntu
+[165347.526221] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[165347.621053] task:msgr-worker-0   state:D stack:    0 pid:24586 ppid: 20824 flags:0x00000220
+[165347.722102] Call Trace:
+[165347.752396]  <TASK>
+[165347.778534]  __schedule+0x2cd/0x890
+[165347.821318]  schedule+0x69/0x110
+[165347.860978]  rwsem_down_read_slowpath+0x179/0x3a0
+[165347.918313]  ? do_softirq+0x4f/0x90
+[165347.961095]  ? copy_user_enhanced_fast_string+0xe/0x40
+[165348.023643]  down_read+0x43/0xa0
+[165348.064003]  do_user_addr_fault+0x3f2/0x660
+[165348.115768]  exc_page_fault+0x77/0x170
+[165348.162306]  asm_exc_page_fault+0x27/0x30
+[165348.211939] RIP: 0010:copy_user_enhanced_fast_string+0xe/0x40
+[165348.282360] Code: 89 d1 c1 e9 03 83 e2 07 f3 48 a5 89 d1 f3 a4 31 c0 0f 01 ca c3 cc cc cc cc 0f 1f 00 0f 01 cb 83 fa 40 0f 82 70 ff ff ff 89 d1 <f3> a4 31 c0 0f 01 ca c3 cc cc cc cc 66 0f 1f 44 00 00 89 d1 83 f8
+[165348.509409] RSP: 0018:ffffac874744b9e0 EFLAGS: 00050206
+[165348.573596] RAX: 00007f2bf423656e RBX: 0000000000000bbe RCX: 000000000000056e
+[165348.660642] RDX: 0000000000000bbe RSI: ffffa084d41a6752 RDI: 00007f2bf4236000
+[165348.747685] RBP: ffffac874744b9e8 R08: 0000000000000bbe R09: ffffffffacca4420
+[165348.834735] R10: 0000000000001000 R11: 0000000000000000 R12: ffffac874744bd98
+[165348.921798] R13: 0000000000000000 R14: ffffac874744bd98 R15: 0000000000000bbe
+[165349.008870]  ? __skb_wait_for_more_packets+0x180/0x180
+[165349.072027]  ? copyout+0x20/0x40
+[165349.112281]  _copy_to_iter+0x98/0x6a0
+[165349.157718]  ? mod_timer+0x1aa/0x350
+[165349.202103]  ? copyout+0x20/0x40
+[165349.242314]  ? sysvec_apic_timer_interrupt+0x4e/0x90
+[165349.303330]  ? asm_sysvec_apic_timer_interrupt+0x1b/0x20
+[165349.368513]  simple_copy_to_iter+0x39/0x50
+[165349.419131]  __skb_datagram_iter+0x78/0x2e0
+[165349.470791]  ? __skb_wait_for_more_packets+0x180/0x180
+[165349.533887]  skb_copy_datagram_iter+0x38/0x80
+[165349.587626]  tcp_recvmsg_locked+0x689/0x9f0
+[165349.639290]  ? aa_label_sk_perm.part.0+0x111/0x160
+[165349.698238]  tcp_recvmsg+0xac/0x1c0
+[165349.741580]  ? aa_sk_perm+0xdd/0x1c0
+[165349.785962]  inet_recvmsg+0x5c/0x110
+[165349.830340]  ? security_socket_recvmsg+0x3a/0x60
+[165349.887204]  sock_recvmsg+0x71/0x80
+[165349.930540]  sock_read_iter+0x8f/0xf0
+[165349.975942]  new_sync_read+0x184/0x1a0
+[165350.022386]  vfs_read+0x102/0x1a0
+[165350.063625]  ksys_read+0xb5/0xf0
+[165350.103813]  ? syscall_trace_enter.isra.0+0xa4/0x1c0
+[165350.164805]  __x64_sys_read+0x1a/0x20
+[165350.210185]  do_syscall_64+0x59/0xc0
+[165350.254528]  ? syscall_exit_to_user_mode+0x27/0x50
+[165350.313419]  ? do_syscall_64+0x69/0xc0
+[165350.359820]  ? syscall_exit_to_user_mode+0x27/0x50
+[165350.418697]  ? do_syscall_64+0x69/0xc0
+[165350.465094]  ? do_syscall_64+0x69/0xc0
+[165350.511481]  ? irqentry_exit_to_user_mode+0x9/0x20
+[165350.570353]  ? irqentry_exit+0x1d/0x30
+[165350.616744]  ? sysvec_reschedule_ipi+0x78/0xe0
+[165350.671455]  entry_SYSCALL_64_after_hwframe+0x61/0xcb
+[165350.733450] RIP: 0033:0x7f2c0f4cb00c
+[165350.777753] RSP: 002b:00007f2bd659b850 EFLAGS: 00000246 ORIG_RAX: 0000000000000000
+[165350.869943] RAX: ffffffffffffffda RBX: 00007f2bf4228e80 RCX: 00007f2c0f4cb00c
+[165350.956934] RDX: 0000000000001000 RSI: 00007f2bf42359b0 RDI: 0000000000000021
+[165351.043923] RBP: 0000000000001000 R08: 0000000000000000 R09: 00000000000284fe
+[165351.130896] R10: 00007fff52d30090 R11: 0000000000000246 R12: 0000000000000000
+[165351.217855] R13: 00007f2bf42359b0 R14: 00007f2bd659bb20 R15: 00007f2bf4229218
+[165351.304804]  </TASK>
+[165351.334056] INFO: task gnocchi-metricd:20922 blocked for more than 126 seconds.
+[165351.423478]       Tainted: P           O      5.15.0-53-generic #59~20.04.1-Ubuntu
+[165351.515669] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[165351.610968] task:gnocchi-metricd state:D stack:    0 pid:20922 ppid: 20824 flags:0x00000220
+[165351.712527] Call Trace:
+[165351.743338]  <TASK>
+[165351.769960]  __schedule+0x2cd/0x890
+[165351.813250]  schedule+0x69/0x110
+[165351.853390]  rwsem_down_read_slowpath+0x179/0x3a0
+[165351.911216]  down_read+0x43/0xa0
+[165351.951354]  do_user_addr_fault+0x3f2/0x660
+[165352.002930]  exc_page_fault+0x77/0x170
+[165352.049307]  asm_exc_page_fault+0x27/0x30
+[165352.098802] RIP: 0033:0x5c16b2
+[165352.136853] RSP: 002b:00007f2bfbffd8a0 EFLAGS: 00010206
+[165352.200917] RAX: 000000000000036a RBX: 00007f2bc4061800 RCX: 0000000000000003
+[165352.287870] RDX: 0000000000000003 RSI: 00007f2c0cf53970 RDI: 00007f2c002b27c0
+[165352.374817] RBP: 00007f2c01b0383e R08: 000000000000006a R09: 00007f2bc4061980
+[165352.461779] R10: 000000000000006a R11: 00007f2c0e4478b0 R12: 00007f2bc4061980
+[165352.548735] R13: 0000000002ba15e0 R14: 00007f2c002b27c0 R15: 0000000000000003
+[165352.635715]  </TASK>
+[165352.667946] INFO: task msgr-worker-0:24599 blocked for more than 127 seconds.
+[165352.755023]       Tainted: P           O      5.15.0-53-generic #59~20.04.1-Ubuntu
+[165352.847301] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[165352.942703] task:msgr-worker-0   state:D stack:    0 pid:24599 ppid: 20824 flags:0x00000220
+[165353.044314] Call Trace:
+[165353.075169]  <TASK>
+[165353.101843]  __schedule+0x2cd/0x890
+[165353.145175]  ? __ip_finish_output+0x213/0x300
+[165353.198895]  schedule+0x69/0x110
+[165353.239106]  rwsem_down_read_slowpath+0x179/0x3a0
+[165353.296988]  ? copy_user_enhanced_fast_string+0xe/0x40
+[165353.360083]  down_read+0x43/0xa0
+[165353.400289]  do_user_addr_fault+0x3f2/0x660
+[165353.451934]  exc_page_fault+0x77/0x170
+[165353.498377]  asm_exc_page_fault+0x27/0x30
+[165353.547944] RIP: 0010:copy_user_enhanced_fast_string+0xe/0x40
+[165353.618316] Code: 89 d1 c1 e9 03 83 e2 07 f3 48 a5 89 d1 f3 a4 31 c0 0f 01 ca c3 cc cc cc cc 0f 1f 00 0f 01 cb 83 fa 40 0f 82 70 ff ff ff 89 d1 <f3> a4 31 c0 0f 01 ca c3 cc cc cc cc 66 0f 1f 44 00 00 89 d1 83 f8
+[165353.845370] RSP: 0018:ffffac87470b3a18 EFLAGS: 00050206
+[165353.909608] RAX: 00007f2bf423b35e RBX: 0000000000000bbe RCX: 000000000000035e
+[165353.996682] RDX: 0000000000000bbe RSI: ffffa0848e7a1962 RDI: 00007f2bf423b000
+[165354.083741] RBP: ffffac87470b3a20 R08: 0000000000000bbe R09: ffffffffacca4420
+[165354.170800] R10: 0000000000001000 R11: 0000000000000000 R12: ffffac87470b3dd0
+[165354.257862] R13: 0000000000000000 R14: ffffac87470b3dd0 R15: 0000000000000bbe
+[165354.344924]  ? __skb_wait_for_more_packets+0x180/0x180
+[165354.408069]  ? copyout+0x20/0x40
+[165354.448322]  _copy_to_iter+0x98/0x6a0
+[165354.493756]  ? __skb_wait_for_more_packets+0x180/0x180
+[165354.556870]  ? ktime_get+0x43/0xc0
+[165354.599176]  ? skb_free_head+0x59/0x80
+[165354.645628]  simple_copy_to_iter+0x39/0x50
+[165354.696227]  __skb_datagram_iter+0x78/0x2e0
+[165354.747872]  ? __skb_wait_for_more_packets+0x180/0x180
+[165354.811014]  skb_copy_datagram_iter+0x38/0x80
+[165354.864791]  tcp_recvmsg_locked+0x689/0x9f0
+[165354.916447]  ? aa_label_sk_perm.part.0+0x111/0x160
+[165354.975385]  tcp_recvmsg+0xac/0x1c0
+[165355.018721]  ? aa_sk_perm+0xdd/0x1c0
+[165355.063093]  inet_recvmsg+0x5c/0x110
+[165355.107465]  ? security_socket_recvmsg+0x3a/0x60
+[165355.164321]  sock_recvmsg+0x71/0x80
+[165355.207648]  sock_read_iter+0x8f/0xf0
+[165355.253047]  new_sync_read+0x184/0x1a0
+[165355.299489]  vfs_read+0x102/0x1a0
+[165355.340717]  ksys_read+0xb5/0xf0
+[165355.380904]  ? syscall_trace_enter.isra.0+0xa4/0x1c0
+[165355.441902]  __x64_sys_read+0x1a/0x20
+[165355.487289]  do_syscall_64+0x59/0xc0
+[165355.531628]  ? syscall_exit_to_user_mode+0x27/0x50
+[165355.590522]  ? __x64_sys_read+0x1a/0x20
+[165355.637968]  ? do_syscall_64+0x69/0xc0
+[165355.684353]  ? irqentry_exit_to_user_mode+0x9/0x20
+[165355.743218]  ? irqentry_exit+0x1d/0x30
+[165355.789642]  ? sysvec_reschedule_ipi+0x78/0xe0
+[165355.844393]  entry_SYSCALL_64_after_hwframe+0x61/0xcb
+[165355.906394] RIP: 0033:0x7f2c0f4cb00c
+[165355.950708] RSP: 002b:00007f2bda59b850 EFLAGS: 00000246 ORIG_RAX: 0000000000000000
+[165356.043086] RAX: ffffffffffffffda RBX: 00007f2bf422fb80 RCX: 00007f2c0f4cb00c
+[165356.130069] RDX: 0000000000001000 RSI: 00007f2bf423a7a0 RDI: 0000000000000023
+[165356.217061] RBP: 0000000000001000 R08: 0000000000000000 R09: 00000000000284fe
+[165356.304040] R10: 00007fff52d30090 R11: 0000000000000246 R12: 0000000000000000
+[165356.391023] R13: 00007f2bf423a7a0 R14: 00007f2bda59bb20 R15: 00007f2bf422ff18
+[165356.478015]  </TASK>
+[165356.539135] INFO: task gnocchi-metricd:20946 blocked for more than 131 seconds.
+[165356.628443]       Tainted: P           O      5.15.0-53-generic #59~20.04.1-Ubuntu
+[165356.720669] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[165356.815984] task:gnocchi-metricd state:D stack:    0 pid:20946 ppid: 20824 flags:0x00000220
+[165356.917546] Call Trace:
+[165356.948359]  <TASK>
+[165356.975004]  __schedule+0x2cd/0x890
+[165357.018279]  schedule+0x69/0x110
+[165357.058438]  rwsem_down_read_slowpath+0x179/0x3a0
+[165357.116272]  ? restore_fpregs_from_fpstate+0x80/0xc0
+[165357.177234]  down_read+0x43/0xa0
+[165357.217383]  do_user_addr_fault+0x3f2/0x660
+[165357.268969]  ? syscall_exit_to_user_mode+0x27/0x50
+[165357.327834]  exc_page_fault+0x77/0x170
+[165357.374213]  asm_exc_page_fault+0x27/0x30
+[165357.423725] RIP: 0033:0x5c16b2
+[165357.461786] RSP: 002b:00007f2bfbffd8a0 EFLAGS: 00010206
+[165357.525749] RAX: 000000000000036a RBX: 00007f2bc41719a0 RCX: 0000000000000003
+[165357.612703] RDX: 0000000000000003 RSI: 00007f2c0cf53970 RDI: 00007f2c002b28b0
+[165357.699660] RBP: 00007f2c01b0383e R08: 000000000000006a R09: 00007f2bc4171b20
+[165357.786623] R10: 000000000000006a R11: 00007f2c0e4478b0 R12: 00007f2bc4171b20
+[165357.873585] R13: 0000000002ba15e0 R14: 00007f2c002b28b0 R15: 0000000000000003
+[165357.960557]  </TASK>
+[165357.988371] INFO: task log:20981 blocked for more than 132 seconds.
+[165358.065279]       Tainted: P           O      5.15.0-53-generic #59~20.04.1-Ubuntu
+[165358.157529] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[165358.252785] task:log             state:D stack:    0 pid:20981 ppid: 20824 flags:0x00000220
+[165358.354394] Call Trace:
+[165358.385248]  <TASK>
+[165358.411948]  __schedule+0x2cd/0x890
+[165358.455270]  ? do_futex+0x15b/0x880
+[165358.498616]  schedule+0x69/0x110
+[165358.538806]  rwsem_down_read_slowpath+0x179/0x3a0
+[165358.596701]  ? __x64_sys_futex+0x50/0x1c0
+[165358.646257]  down_read+0x43/0xa0
+[165358.686455]  do_user_addr_fault+0x3f2/0x660
+[165358.738099]  ? syscall_exit_to_user_mode+0x27/0x50
+[165358.797039]  exc_page_fault+0x77/0x170
+[165358.843487]  asm_exc_page_fault+0x27/0x30
+[165358.893051] RIP: 0033:0x7f2c0329598e
+[165358.937406] RSP: 002b:00007f2bfad9cd60 EFLAGS: 00010202
+[165359.001513] RAX: 0000000000002710 RBX: 00007f2bfaed9090 RCX: f0f0f0f0f0f0f0f1
+[165359.088507] RDX: 00007f2bf4014780 RSI: 00007f2bf4054200 RDI: 00007f2bf40540d0
+[165359.175502] RBP: 000000000000001f R08: 0000000000000000 R09: 0000000000000000
+[165359.262496] R10: 17318c319a99cf1e R11: 0000000000000286 R12: 00007f2bf4054200
+[165359.349506] R13: 00007f2bf4077cc0 R14: 00007f2bf4054100 R15: 00007f2bf40540d0
+[165359.436509]  </TASK>
+[165359.465614] INFO: task safe_timer:35996 blocked for more than 134 seconds.
+[165359.550003]       Tainted: P           O      5.15.0-53-generic #59~20.04.1-Ubuntu
+[165359.642513] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[165359.737877] task:safe_timer      state:D stack:    0 pid:35996 ppid: 20824 flags:0x00000220
+[165359.839472] Call Trace:
+[165359.870317]  <TASK>
+[165359.897001]  __schedule+0x2cd/0x890
+[165359.940330]  schedule+0x69/0x110
+[165359.980521]  rwsem_down_read_slowpath+0x179/0x3a0
+[165360.038406]  down_read+0x43/0xa0
+[165360.078594]  do_user_addr_fault+0x3f2/0x660
+[165360.130222]  ? exit_to_user_mode_prepare+0x9c/0x1c0
+[165360.190184]  exc_page_fault+0x77/0x170
+[165360.236616]  asm_exc_page_fault+0x27/0x30
+[165360.286165] RIP: 0033:0x7f2c03296f75
+[165360.330505] RSP: 002b:00007f2be67fbcb0 EFLAGS: 00010246
+[165360.394612] RAX: 00007f2be67fc700 RBX: 00007f2bf4075260 RCX: 0000000000000000
+[165360.481611] RDX: 0000000000000000 RSI: 00007f2be67fbda0 RDI: 00007f2be67fbda0
+[165360.568605] RBP: f0f0f0f0f0f0f0f1 R08: 0000000000000000 R09: 00007f2bf411bc20
+[165360.655607] R10: 00007fff52d30080 R11: 0000000004e8e6b4 R12: 00007f2be67fbda0
+[165360.742614] R13: 00007f2c0f3aac10 R14: 00007f2bf4010e80 R15: 00007f2bf40752a0
+[165360.829622]  </TASK>
+[165360.857512] INFO: task msgr-worker-2:36114 blocked for more than 135 seconds.
+[165360.945147]       Tainted: P           O      5.15.0-53-generic #59~20.04.1-Ubuntu
+[165361.037429] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[165361.132767] task:msgr-worker-2   state:D stack:    0 pid:36114 ppid: 20824 flags:0x00000220
+[165361.234350] Call Trace:
+[165361.265189]  <TASK>
+[165361.291849]  __schedule+0x2cd/0x890
+[165361.335157]  ? ip_finish_output2+0x1a5/0x580
+[165361.387831]  schedule+0x69/0x110
+[165361.428029]  rwsem_down_read_slowpath+0x179/0x3a0
+[165361.485908]  ? copy_user_enhanced_fast_string+0xe/0x40
+[165361.548992]  down_read+0x43/0xa0
+[165361.589192]  do_user_addr_fault+0x3f2/0x660
+[165361.640831]  exc_page_fault+0x77/0x170
+[165361.687269]  asm_exc_page_fault+0x27/0x30
+[165361.736826] RIP: 0010:copy_user_enhanced_fast_string+0xe/0x40
+[165361.807187] Code: 89 d1 c1 e9 03 83 e2 07 f3 48 a5 89 d1 f3 a4 31 c0 0f 01 ca c3 cc cc cc cc 0f 1f 00 0f 01 cb 83 fa 40 0f 82 70 ff ff ff 89 d1 <f3> a4 31 c0 0f 01 ca c3 cc cc cc cc 66 0f 1f 44 00 00 89 d1 83 f8
+[165362.034178] RSP: 0018:ffffac87495d79b0 EFLAGS: 00050206
+[165362.098371] RAX: 00007f2bf422e63e RBX: 0000000000000bbe RCX: 000000000000063e
+[165362.185432] RDX: 0000000000000bbe RSI: ffffa0909fced682 RDI: 00007f2bf422e000
+[165362.272490] RBP: ffffac87495d79b8 R08: 0000000000000bbe R09: ffffffffacca4420
+[165362.359547] R10: 0000000000001000 R11: 0000000000000000 R12: ffffac87495d7d68
+[165362.446611] R13: 0000000000000000 R14: ffffac87495d7d68 R15: 0000000000000bbe
+[165362.533667]  ? __skb_wait_for_more_packets+0x180/0x180
+[165362.596809]  ? copyout+0x20/0x40
+[165362.637052]  _copy_to_iter+0x98/0x6a0
+[165362.682486]  ? tcp_schedule_loss_probe+0x11d/0x1c0
+[165362.741428]  ? simple_copy_to_iter+0x39/0x50
+[165362.794130]  simple_copy_to_iter+0x39/0x50
+[165362.844738]  __skb_datagram_iter+0x78/0x2e0
+[165362.896387]  ? __skb_wait_for_more_packets+0x180/0x180
+[165362.959482]  skb_copy_datagram_iter+0x38/0x80
+[165363.013223]  tcp_recvmsg_locked+0x689/0x9f0
+[165363.064883]  ? aa_label_sk_perm.part.0+0x111/0x160
+[165363.123820]  tcp_recvmsg+0xac/0x1c0
+[165363.167162]  ? aa_sk_perm+0xdd/0x1c0
+[165363.211537]  inet_recvmsg+0x5c/0x110
+[165363.255909]  ? security_socket_recvmsg+0x3a/0x60
+[165363.312767]  sock_recvmsg+0x71/0x80
+[165363.356101]  sock_read_iter+0x8f/0xf0
+[165363.401510]  new_sync_read+0x184/0x1a0
+[165363.447954]  vfs_read+0x102/0x1a0
+[165363.489188]  ksys_read+0xb5/0xf0
+[165363.529376]  ? syscall_trace_enter.isra.0+0xa4/0x1c0
+[165363.590372]  __x64_sys_read+0x1a/0x20
+[165363.635760]  do_syscall_64+0x59/0xc0
+[165363.680104]  ? do_syscall_64+0x69/0xc0
+[165363.726520]  ? do_syscall_64+0x69/0xc0
+[165363.772923]  ? syscall_exit_to_user_mode+0x27/0x50
+[165363.831798]  ? do_syscall_64+0x69/0xc0
+[165363.878181]  ? syscall_exit_to_user_mode+0x27/0x50
+[165363.936942]  ? __x64_sys_read+0x1a/0x20
+[165363.984364]  ? do_syscall_64+0x69/0xc0
+[165364.030741]  ? syscall_exit_to_user_mode+0x27/0x50
+[165364.089604]  ? do_syscall_64+0x69/0xc0
+[165364.135983]  ? sysvec_reschedule_ipi+0x78/0xe0
+[165364.190678]  entry_SYSCALL_64_after_hwframe+0x61/0xcb
+[165364.252664] RIP: 0033:0x7f2c0f4cb00c
+[165364.296957] RSP: 002b:00007f2bd9599850 EFLAGS: 00000246 ORIG_RAX: 0000000000000000
+[165364.389117] RAX: ffffffffffffffda RBX: 00007f2bf4226400 RCX: 00007f2c0f4cb00c
+[165364.476123] RDX: 0000000000001000 RSI: 00007f2bf422da80 RDI: 0000000000000024
+[165364.563097] RBP: 0000000000001000 R08: 0000000000000000 R09: 00000000000284fe
+[165364.650067] R10: 00007fff52d30090 R11: 0000000000000246 R12: 0000000000000000
+[165364.737022] R13: 00007f2bf422da80 R14: 00007f2bd9599b20 R15: 00007f2bf4226798
+[165364.823964]  </TASK>
+[165364.851742] INFO: task gnocchi-metricd:36199 blocked for more than 139 seconds.
+[165364.941354]       Tainted: P           O      5.15.0-53-generic #59~20.04.1-Ubuntu
+[165365.033714] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[165365.129334] task:gnocchi-metricd state:D stack:    0 pid:36199 ppid: 20824 flags:0x00000220
+[165365.231177] Call Trace:
+[165365.261983]  <TASK>
+[165365.288598]  __schedule+0x2cd/0x890
+[165365.331872]  schedule+0x69/0x110
+[165365.372005]  rwsem_down_read_slowpath+0x179/0x3a0
+[165365.429841]  down_read+0x43/0xa0
+[165365.469982]  do_user_addr_fault+0x3f2/0x660
+[165365.521578]  ? exit_to_user_mode_prepare+0x9c/0x1c0
+[165365.581484]  exc_page_fault+0x77/0x170
+[165365.627867]  asm_exc_page_fault+0x27/0x30
+[165365.677363] RIP: 0033:0x7f2c0f454f84
+[165365.721648] RSP: 002b:00007f2bc7ffebe0 EFLAGS: 00010246
+[165365.785710] RAX: 0000000000000280 RBX: 00007f2ba4000020 RCX: 00007f2ba4009620
+[165365.872662] RDX: 0000000000000054 RSI: 00007f2ba400e3c0 RDI: 0000000000000002
+[165365.959613] RBP: 0000000000000000 R08: 0000000000000000 R09: 00007f2ba400e640
+[165366.046568] R10: 0000000000000000 R11: 00007f2ba4000080 R12: 00007f2ba4000110
+[165366.133525] R13: 0000000000000290 R14: ffffffffffffffb0 R15: 0000000000000027
+[165366.220485]  </TASK>
+[165366.248266] INFO: task gnocchi-metricd:20979 blocked for more than 141 seconds.
+[165366.337775]       Tainted: P           O      5.15.0-53-generic #59~20.04.1-Ubuntu
+[165366.430531] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[165366.525930] task:gnocchi-metricd state:D stack:    0 pid:20979 ppid: 20824 flags:0x00000220
+[165366.627541] Call Trace:
+[165366.658392]  <TASK>
+[165366.685069]  __schedule+0x2cd/0x890
+[165366.728382]  schedule+0x69/0x110
+[165366.768579]  rwsem_down_read_slowpath+0x179/0x3a0
+[165366.826462]  down_read+0x43/0xa0
+[165366.866655]  do_user_addr_fault+0x3f2/0x660
+[165366.918296]  ? exit_to_user_mode_prepare+0x9c/0x1c0
+[165366.978258]  exc_page_fault+0x77/0x170
+[165367.024706]  asm_exc_page_fault+0x27/0x30
+[165367.074264] RIP: 0033:0x59c6e6
+[165367.112377] RSP: 002b:00007f2c00aebfc0 EFLAGS: 00010246
+[165367.176495] RAX: 00007f2c00aec008 RBX: 00000000005f6b20 RCX: 00007f2bc81c5940
+[165367.263516] RDX: 0000000000000008 RSI: 0000000000000000 RDI: 00007f2c00aec008
+[165367.350529] RBP: 00007f2c0bef0af0 R08: 0000000000014220 R09: 00000000008fe9c0
+[165367.437545] R10: 00007f2c0db41340 R11: 00007f2c00aebf78 R12: 0000000000000002
+[165367.524552] R13: 0000000000000002 R14: 00007f2c00aec000 R15: 00007f2c0e46c500
+[165367.611557]  </TASK>
+[165367.665472] Kernel panic - not syncing: hung_task: blocked tasks
+[165367.739003] CPU: 75 PID: 551 Comm: khungtaskd Kdump: loaded Tainted: P           O      5.15.0-53-generic #59~20.04.1-Ubuntu
+[165367.874923] Hardware name: Lenovo ThinkSystem SR650 -[7X06CTO1WW]-/-[7X06CTO1WW]-, BIOS -[IVE180H-3.41]- 10/05/2022
+[165368.001494] Call Trace:
+[165368.032377]  <TASK>
+[165368.059066]  dump_stack_lvl+0x4a/0x63
+[165368.104473]  dump_stack+0x10/0x16
+[165368.145703]  panic+0x149/0x321
+[165368.183800]  watchdog.cold+0x29/0x118
+[165368.229182]  ? hungtask_pm_notify+0x50/0x50
+[165368.280802]  kthread+0x127/0x150
+[165368.320985]  ? set_kthread_struct+0x50/0x50
+[165368.372607]  ret_from_fork+0x1f/0x30
+[165368.416954]  </TASK>
 
 Output of kmem -i
 
                  PAGES        TOTAL      PERCENTAGE
-    TOTAL MEM  128785197     491.3 GB         ----
-         FREE   398079       1.5 GB    0% of TOTAL MEM
-         USED  128387118     489.8 GB   99% of TOTAL MEM
-       SHARED   503861       1.9 GB    0% of TOTAL MEM
-      BUFFERS    17115      66.9 MB    0% of TOTAL MEM
-       CACHED   380482       1.5 GB    0% of TOTAL MEM
-         SLAB   230297     899.6 MB    0% of TOTAL MEM
+    TOTAL MEM  145308636     554.3 GB         ----
+         FREE   471939       1.8 GB    0% of TOTAL MEM
+         USED  144836697     552.5 GB   99% of TOTAL MEM
+       SHARED  5048163      19.3 GB    3% of TOTAL MEM
+      BUFFERS    24871      97.2 MB    0% of TOTAL MEM
+       CACHED   638331       2.4 GB    0% of TOTAL MEM
+         SLAB   236276       923 MB    0% of TOTAL MEM
 
    TOTAL HUGE        0            0         ----
     HUGE FREE        0            0    0% of TOTAL HUGE
 
    TOTAL SWAP  15624191      59.6 GB         ----
-    SWAP USED  12468479      47.6 GB   79% of TOTAL SWAP
-    SWAP FREE  3155712        12 GB   20% of TOTAL SWAP
+    SWAP USED  8010304      30.6 GB   51% of TOTAL SWAP
+    SWAP FREE  7613887        29 GB   48% of TOTAL SWAP
 
- COMMIT LIMIT  80016789     305.2 GB         ----
-    COMMITTED  453036340    1728.2 GB  566% of TOTAL LIMIT
+ COMMIT LIMIT  88278509     336.8 GB         ----
+    COMMITTED  319045864    1217.1 GB  361% of TOTAL LIMIT
 
 Output of dev -d
 
 MAJOR GENDISK            NAME       REQUEST_QUEUE      TOTAL ASYNC  SYNC 
-  259 ff2b6e1d48cc5200   nvme0n1    ff2b6e1d69f82990       0     0     0 
-  259 ff2b6e1d7c834c00   nvme1n1    ff2b6e1d677d18f0       0     0     0 
-  259 ff2b6e1d7d311e00   nvme2n1    ff2b6e1d68aaa990       0     0     0 
-  259 ff2b6e1d82a17200   nvme3n1    ff2b6e1d69f87460       5     0     5 
-    9 ff2b6e1d486c4c00   md3        ff2b6e1d6a07ec10   28968     0 28968 
-    9 ff2b6e1d6728a000   md1        ff2b6e1d76f918f0       0     0     0 
-    9 ff2b6e1d689eba00   md2        ff2b6e1d68a0c280       0     0     0 
-  253 ff2b6e1d499fe000   dm-0       ff2b6e1d8573b1e0   31234     0 31234 
-  253 ff2b6e1d499fb400   dm-1       ff2b6e1d8573a140       0     0     0 
-  253 ff2b6e1d499fc400   dm-2       ff2b6e1d8573a990       0     0     0 
-  253 ff2b6e1d49ed1e00   dm-3       ff2b6e1d67c94ad0       0     0     0 
-  253 ff2b6e1d49ed7200   dm-4       ff2b6e1d67c931e0       0     0     0 
-  253 ff2b6e1d49ed6000   dm-5       ff2b6e1d67c92140       0     0     0 
+  259 ffffa08033bba800   nvme1n1    ffffa0802bd88850       1     1     0 
+  259 ffffa0803384ba00   nvme0n1    ffffa08032b13a30       2     2     0 
+    9 ffffa0803384be00   md1        ffffa08032b12990       0     0     0 
+    9 ffffa08033848400   md3        ffffa08032b12140    4978     0  4978 
+  253 ffffa08033bbb200   dm-0       ffffa0802bd8c280    6092     0  6092 
+  253 ffffa08033bb9600   dm-1       ffffa0802bd8ec10       0     0     0 
+  253 ffffa08033bc3c00   dm-2       ffffa0802bd8f460      22     0    22 
+    8 ffffa0802985f000   sdb        ffffa0803fdbec10       0     0     0 
+    8 ffffa080298ee600   sdc        ffffa0803fdbd320       0     0     0 
+    8 ffffa080296e8c00   sdd        ffffa0803fdbba30       0     0     0 
+    8 ffffa0802a7dc200   sde        ffffa0803fdba140       0     0     0 
+    8 ffffa0800fd2d800   sda        ffffa080410f6c10       0     0     0 
+    8 ffffa0802985de00   sdg        ffffa0803fdb98f0       0     0     0 
+    8 ffffa0802b9ffa00   sdh        ffffa0803fdbdb70       0     0     0 
+    8 ffffa080298b3c00   sdf        ffffa0803fdbe3c0       0     0     0 
+    9 ffffa0802a222000   md2        ffffa0802ce4f460       0     0     0 
+  253 ffffa0802984e000   dm-3       ffffa08036dea990       0     0     0 
+  253 ffffa0802984e200   dm-4       ffffa08036dea140       0     0     0 
+  253 ffffa0802984c400   dm-5       ffffa08036decad0       0     0     0 
+
+Output of mount
+
+     MOUNT           SUPERBLK     TYPE   DEVNAME   DIRNAME
+ffffa0c740087700 ffffa0800004c800 rootfs none      /         
+ffffa080296ec640 ffffa0800eef2800 sysfs  sysfs     /sys      
+ffffa080296efd40 ffffa0800eef3800 proc   proc      /proc     
+ffffa080296ec000 ffffa0c7400d8800 devtmpfs udev    /dev      
+ffffa080296edb80 ffffa0800eef4000 devpts devpts    /dev/pts  
+ffffa080296efac0 ffffa0800eef7800 tmpfs  tmpfs     /run      
+ffffa080296ef200 ffffa08042235800 ext4   /dev/mapper/sys_vg_md2-root /         
+ffffa08012e20f00 ffffa0c7400db000 securityfs securityfs /sys/kernel/security
+ffffa0c751782d00 ffffa080288e2800 tmpfs  tmpfs     /dev/shm  
+ffffa0c751783340 ffffa080288e3800 tmpfs  tmpfs     /run/lock 
+ffffa0c751780b40 ffffa080288e7800 tmpfs  tmpfs     /sys/fs/cgroup
+ffffa0c751781180 ffffa080288e1800 cgroup2 cgroup2  /sys/fs/cgroup/unified
+ffffa0c7517803c0 ffffa080288e0800 cgroup cgroup    /sys/fs/cgroup/systemd
+ffffa0c751781900 ffffa080288e3000 pstore pstore    /sys/fs/pstore
+ffffa0c751781680 ffffa080288e1000 efivarfs efivarfs /sys/firmware/efi/efivars
+ffffa0c751780c80 ffffa080288e0000 bpf    bpf       /sys/fs/bpf
+ffffa0c740086580 ffffa08041850000 cgroup cgroup    /sys/fs/cgroup/rdma
+ffffa0c740084140 ffffa08041856000 cgroup cgroup    /sys/fs/cgroup/hugetlb
+ffffa0c740084f00 ffffa08041856800 cgroup cgroup    /sys/fs/cgroup/cpu,cpuacct
+ffffa0c740084dc0 ffffa08041857000 cgroup cgroup    /sys/fs/cgroup/pids
+ffffa0c740084640 ffffa08041854800 cgroup cgroup    /sys/fs/cgroup/devices
+ffffa0c740087d40 ffffa08041855000 cgroup cgroup    /sys/fs/cgroup/net_cls,net_prio
+ffffa0c740084000 ffffa08041852000 cgroup cgroup    /sys/fs/cgroup/cpuset
+ffffa0c740085b80 ffffa08041855800 cgroup cgroup    /sys/fs/cgroup/blkio
+ffffa0c740087ac0 ffffa08041852800 cgroup cgroup    /sys/fs/cgroup/freezer
+ffffa0c740087200 ffffa08041853800 cgroup cgroup    /sys/fs/cgroup/perf_event
+ffffa0c740086300 ffffa08041854000 cgroup cgroup    /sys/fs/cgroup/misc
+ffffa0c740086a80 ffffa08038b4a000 cgroup cgroup    /sys/fs/cgroup/memory
+ffffa080298f9a40 ffffa08041b89800 autofs systemd-1 /proc/sys/fs/binfmt_misc
+ffffa08012e20dc0 ffffa08027f7c000 hugetlbfs hugetlbfs /dev/hugepages
+ffffa080296ee300 ffffa080121b9800 mqueue mqueue    /dev/mqueue
+ffffa080296eea80 ffffa0c7400d9000 debugfs debugfs  /sys/kernel/debug
+ffffa08012e20640 ffffa08011e32000 tracefs tracefs  /sys/kernel/tracing
+ffffa0802ba60780 ffffa0c7629f1800 fusectl fusectl  /sys/fs/fuse/connections
+ffffa080298fb0c0 ffffa08010df4000 configfs configfs /sys/kernel/config
+ffffa0802a1b2f80 ffffa0800f788000 binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc/
+ffffa080134a9cc0 ffffa0801e167800 ext4   /dev/mapper/sys_vg_md3-tmp /tmp      
+ffffa0c75438f200 ffffa0802ce01800 ext4   /dev/mapper/sys_vg_md3-var /var      
+ffffa08029901540 ffffa0c75559d800 ext4   /dev/md1  /boot     
+ffffa08023aead00 ffffa0c76ed48000 ext4   /dev/mapper/sys_vg_md2-home /home     
+ffffa0802a54b0c0 ffffa0802ce74000 vfat   /dev/nvme0n1p1 /boot/efi 
+ffffa08036dca440 ffffa0800e16f800 vfat   /dev/nvme1n1p1 /boot/efi2
+ffffa0c758165040 ffffa0800f4f9000 squashfs /dev/loop0 /snap/canonical-livepatch/146
+ffffa0c75438c3c0 ffffa0802ce04800 ext4   /dev/mapper/sys_vg_md2-varlog /var/log  
+ffffa08023ae9180 ffffa0800ea51800 squashfs /dev/loop1 /snap/canonical-livepatch/164
+ffffa0801acb8f00 ffffa0802150a000 squashfs /dev/loop3 /snap/core20/1695
+ffffa0c753ab48c0 ffffa0802cdcc000 squashfs /dev/loop4 /snap/snapd/17883
+ffffa0802040f980 ffffa0800e666000 squashfs /dev/loop5 /snap/core20/1738
+ffffa08030ebbc00 ffffa08029af3800 squashfs /dev/loop7 /snap/core/14399
+ffffa0c756bcbd40 ffffa0800eef7800 tmpfs  tmpfs     /run/snapd/ns
+ffffa0c7940312c0 ffffa0800004f000 nsfs   nsfs      /run/snapd/ns/snapd/ns/lxd.mnt
+ffffa08030eb9e00 ffffa0800004f000 nsfs   nsfs      /run/snapd/ns/snapd/ns/canonical-livepatch.mnt
+ffffa0800fd248c0 ffffa0c74e623800 tmpfs  tmpfs     /var/snap/lxd/common/ns
+ffffa0800fd26300 ffffa0800004f000 nsfs   nsfs      /var/snap/lxd/common/ns/shmounts
+ffffa0cdf1d7a820                0 mount: invalid kernel virtual address: 0  type: "super_block buffer"
+
+Output of files
+
+PID: 551    TASK: ffffa08010e20000  CPU: 75  COMMAND: "khungtaskd"
+ROOT: /    CWD: /
+No open files
+
+Output of vm
+
+PID: 551    TASK: ffffa08010e20000  CPU: 75  COMMAND: "khungtaskd"
+       MM               PGD          RSS    TOTAL_VM
+       0                 0            0k       0k   
 
 Oldest blocked processes
 
-[0 00:03:52.836] [UN]  PID: 2516462  TASK: ff2b6e26adbb1f80  CPU: 15   COMMAND: "connection"
-[0 00:03:52.850] [UN]  PID: 570637   TASK: ff2b6e66ebc8bf00  CPU: 4    COMMAND: "connection"
-[0 00:03:52.855] [UN]  PID: 2433662  TASK: ff2b6e2690bd9f80  CPU: 20   COMMAND: "connection"
-[0 00:03:52.856] [UN]  PID: 2638832  TASK: ff2b6e1d58bdbf00  CPU: 84   COMMAND: "connection"
-[0 00:03:52.860] [UN]  PID: 546189   TASK: ff2b6e6871e65e80  CPU: 112  COMMAND: "connection"
-[0 00:03:52.970] [UN]  PID: 3267422  TASK: ff2b6e64810dde80  CPU: 96   COMMAND: "vault"
-[0 00:03:52.970] [UN]  PID: 63698    TASK: ff2b6e24da460000  CPU: 20   COMMAND: "prometheus"
-[0 00:03:52.974] [UN]  PID: 1105701  TASK: ff2b6e2b278f0000  CPU: 49   COMMAND: "vault"
-[0 00:03:52.986] [UN]  PID: 58778    TASK: ff2b6e24036ade80  CPU: 101  COMMAND: "prometheus"
-[0 00:03:52.993] [UN]  PID: 59963    TASK: ff2b6e2480ef9f80  CPU: 1    COMMAND: "prometheus"
-root@rotom:/home/hotkdump# 
+[0 00:04:12.457] [UN]  PID: 29336  TASK: ffffa08960e04000  CPU: 71  COMMAND: "filebeat"
+[0 00:04:12.457] [UN]  PID: 30200  TASK: ffffa08a7732c000  CPU: 39  COMMAND: "filebeat"
+[0 00:04:13.638] [UN]  PID: 30431  TASK: ffffa0cb5f2cc000  CPU: 24  COMMAND: "filebeat"
+[0 00:04:14.033] [UN]  PID: 29930  TASK: ffffa089eefaa000  CPU: 45  COMMAND: "filebeat"
+[0 00:04:14.077] [UN]  PID: 196960  TASK: ffffa08b4895e000  CPU: 7   COMMAND: "alertmanager"
+[0 00:04:14.319] [UN]  PID: 21629  TASK: ffffa08960e16000  CPU: 74  COMMAND: "jujud"
+[0 00:04:14.490] [UN]  PID: 21126  TASK: ffffa0c9ea28e000  CPU: 29  COMMAND: "jujud"
+[0 00:04:14.519] [UN]  PID: 2195465  TASK: ffffa08c63cb2000  CPU: 69  COMMAND: "jujud"
+[0 00:04:14.794] [UN]  PID: 29998  TASK: ffffa0c8c85ce000  CPU: 54  COMMAND: "filebeat"
+[0 00:04:15.013] [UN]  PID: 26333  TASK: ffffa0895ad9e000  CPU: 59  COMMAND: "filebeat"
 
+Top 20 memory consumers
 
---------------------
-
-
-root@rotom:/home/hotkdump# tail -f hotkdump.log 
-INFO:root:in execute_cmd with command cp  and args /lib/debug/boot/vmlinux-5.15.0-52-generic .
-INFO:root:fullcmd is cp /lib/debug/boot/vmlinux-5.15.0-52-generic .
-INFO:root:result is.. 0
-INFO:root:args to main are ...
-INFO:root:dump.202211291417 vmlinux-5.15.0-52-generic
-INFO:root:in execute_cmd with command ./crash -s  and args dump.202211291417 vmlinux-5.15.0-52-generic
-INFO:root:executing ./crash -s dump.202211291417 vmlinux-5.15.0-52-generic
-INFO:root:in execute_cmd with command ./crash -s  and args dump.202211291417 vmlinux-5.15.0-52-generic
-INFO:root:fullcmd is ./crash -s dump.202211291417 vmlinux-5.15.0-52-generic
-INFO:root:result is.. 0
-
+2802809 9633 62 ffffa0c8a10e8000 IN 78.0 492530556 460724 MB mtail
+2801404 7803 26 ffffa0cc14f60000 IN 2.1 480299544 12404.4 MB mtail
+31239 12287 18 ffffa08a4fdd0000 UN 0.4 10487304 2475.61 MB mysqld
+2802422 9307 4 ffffa0cb7015e000 IN 0.2 73085832 941.738 MB mtail
+53546 38187 66 ffffa0cce32ac000 IN 0.2 19826912 921.887 MB prometheus
+11495 7602 83 ffffa08686fbc000 IN 0.1 1339820 636.219 MB ceph-mon
+2803130 15517 68 ffffa08c3a68c000 IN 0.1 48631492 572.312 MB mtail
+38916 38880 86 ffffa0cb791e2000 IN 0.0 17365624 277.012 MB beam.smp
+2801966 8730 36 ffffa0c949310000 IN 0.0 3703236 260.465 MB mtail
+2803248 20218 30 ffffa0cc68bbe000 IN 0.0 3641152 256.652 MB mtail
+57015 56949 53 ffffa08a5ff24000 IN 0.0 5017260 144.848 MB ceilometer-agen
+56995 56949 35 ffffa08d05886000 IN 0.0 5017260 142.707 MB ceilometer-agen
+57009 56949 47 ffffa08d05882000 IN 0.0 5017260 141.859 MB ceilometer-agen
+56975 56949 72 ffffa08d05880000 IN 0.0 5017004 135.836 MB ceilometer-agen
+2683895 34241 87 ffffa08881334000 IN 0.0 299512 129.398 MB apache2
+11491 7602 14 ffffa08882432000 IN 0.0 502048 127.504 MB ceph-mgr
+2683889 34241 32 ffffa08a2c1a4000 IN 0.0 299504 124.875 MB apache2
+2683980 34241 72 ffffa09111694000 IN 0.0 299768 124.418 MB apache2
+2683965 34241 29 ffffa090fcf8c000 IN 0.0 299256 123.375 MB apache2
+2683966 34241 57 ffffa081ee52a000 IN 0.0 299256 123.242 MB apache2
 
