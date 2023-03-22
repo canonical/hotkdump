@@ -1,6 +1,6 @@
 # ls
 hotkdump.log  hotkdump.out  hotkdump.py  how_to_run_and_output  LICENSE  linux-image-unsigned-5.15.0-53-generic-dbgsym_5.15.0-53.59~20.04.1_amd64.ddeb  pykdump  README.md  TESTING
-root@nikhil-XPS-15-7590:/home/nikhil/hotkdump/hotkdump# which crash
+# which crash
 /usr/bin/crash
 #
 
