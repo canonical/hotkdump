@@ -49,10 +49,20 @@ class kdump_file_header(object):
             Exception: If the kdump_file_path is not recognized as a kdump file
         """
         with open(kdump_file_path, 'rb') as fd:
-            magic = fd.read(8)
-            if not magic == b'KDUMP   ':
+
+            # Let's be more forgiving about locating
+            # the KDUMP signature:
+            bytes = fd.read(1024 * 8)
+            expected_magic = b'KDUMP   '
+
+            offset = bytes.find(expected_magic)
+
+            if offset == -1:
                 raise ExceptionWithLog(
                     f"{kdump_file_path} is not a kernel crash dump file")
+
+            # Skip the magic
+            fd.seek(offset + len(expected_magic), os.SEEK_SET)
 
             version = int.from_bytes(fd.read(4), byteorder='little')
             self.kdump_version = version
@@ -130,6 +140,8 @@ class hotkdump:
     def get_architecture(self):
         if self.kdump_header.machine == "x86_64":
             return "amd64"
+        elif self.kdump_header.machine == "aarch64":
+            return "arm64"
         # FIXME(mkg): Add other architectures as well
         raise NotImplementedError(
             f"Machine architecture {self.kdump_header.machine} not recognized!")
