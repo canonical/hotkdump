@@ -113,6 +113,15 @@ class kdump_file_header(object):
             else:
                 buf += b.decode('ascii')
 
+    def __str__(self) -> str:
+
+        return " | ".join(
+                # Get all attributes, filter out the built-in ones
+                # and stringify the rest in "name:value" format
+                [f" {v}:{str(getattr(self, v))}" for v in filter(
+                    lambda x: not x.startswith("__"), dir(self))]
+            )
+
 
 default_output_file = "hotkdump.out"
 default_log_file = "hotkdump.log"
@@ -251,6 +260,25 @@ class hotkdump:
         p.wait()
         return p
 
+    @staticmethod
+    def strip_release_variant_tags(str):
+        # see: https://ubuntu.com/kernel/variants#version-specific-kernels
+        tags = ["generic", "lowlatency", "generic-hwe",
+                "lowlatency-hwe", "kvm", "aws", "azure", "azure-fde",
+                "gcp", "gke", "snapdragon", "raspi2"]
+        version_specific_tags = [
+            "generic-hwe-{}", "generic-hwe-{}", "lowlatency-hwe-{}", "lowlatency-hwe-{}"]
+        versions = ["16.04", "18.04", "20.04", "22.04", "24.04"]
+
+        for tag in tags:
+            str = str.replace(f"-{tag}", '')
+            str = str.replace(f"-{tag}-edge", '')
+        for vtag in version_specific_tags:
+            for version in versions:
+                str = str.replace(vtag.format(version), '')
+                str = str.replace(vtag.format(version) + '-edge', '')
+        return str
+
     def maybe_download_vmlinux_ddeb(self):
         """Download debug vmlinux image .ddeb for current dump file
         via pullpkg (if not already present).
@@ -263,7 +291,7 @@ class hotkdump:
         ddeb_name_format = "linux-image-unsigned-{}-dbgsym_{}.{}_{}.ddeb"
         expected_ddeb_path = ddeb_name_format.format(
             self.kdump_header.release,
-            self.kdump_header.release.replace('-generic', ''),
+            self.strip_release_variant_tags(self.kdump_header.release),
             self.kdump_header.normalized_version,
             self.get_architecture()
         )
@@ -284,7 +312,7 @@ class hotkdump:
         # UBUNTUTOOLS_UBUNTU_DDEBS_MIRROR= python3 hotkdump.py -c 123 -d dump.dump
         pull_args = ["--distro", "ubuntu", "--arch", self.get_architecture(), "--pull", "ddebs",
                      f"linux-image-unsigned-{self.kdump_header.release}",
-                     f"{self.kdump_header.release.replace('-generic', '')}.{self.kdump_header.normalized_version}"]
+                     f"{self.strip_release_variant_tags(self.kdump_header.release)}.{self.kdump_header.normalized_version}"]
         logging.info(f"Invoking PullPkg().pull with {str(pull_args)}")
 
         PullPkg().pull(pull_args)
