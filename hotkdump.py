@@ -7,6 +7,7 @@ import sys
 import tempfile
 import shutil
 import time
+import textwrap
 
 try:
     from ubuntutools.pullpkg import PullPkg
@@ -206,39 +207,73 @@ class hotkdump:
             ps -m | grep UN | tail >> hotkdump.out
             quit >> hotkdump.out
         """
-        with open("{}{}".format(self.temp_working_dir.name, "/crash_commands"), "w") as ccfile:
-            # FIXME(mkg): Move this to a jinja template?
-            ccfile.write(f"!echo \"Output of sys\\n\" >> {self.output_file}\n")
-            ccfile.write(f"sys >> {self.output_file}\n")
-            ccfile.write(
-                f"!echo \"\\nOutput of bt\\n\" >> {self.output_file}\n")
-            ccfile.write(f"bt >> {self.output_file}\n")
-            ccfile.write(
-                f"!echo \"\\nOutput of log with audit messages filtered out\\n\" >> {self.output_file}\n")
-            ccfile.write(f"log | grep -vi audit >> {self.output_file}\n")
-            ccfile.write(
-                f"!echo \"\\nOutput of kmem -i\\n\" >> {self.output_file}\n")
-            ccfile.write(f"kmem -i >> {self.output_file}\n")
-            ccfile.write(
-                f"!echo \"\\nOutput of dev -d\\n\" >> {self.output_file}\n")
-            ccfile.write(f"dev -d >> {self.output_file}\n")
-            ccfile.write(
-                f"!echo \"\\nOutput of mount\\n\" >> {self.output_file}\n")
-            ccfile.write(f"mount >> {self.output_file}\n")
-            ccfile.write(
-                f"!echo \"\\nOutput of files\\n\" >> {self.output_file}\n")
-            ccfile.write(f"files >> {self.output_file}\n")
-            ccfile.write(
-                f"!echo \"\\nOutput of vm\\n\" >> {self.output_file}\n")
-            ccfile.write(f"vm >> {self.output_file}\n")
-            ccfile.write(
-                f"!echo \"\\nOldest blocked processes\\n\" >> {self.output_file}\n")
-            ccfile.write(f"ps -m | grep UN | tail >> {self.output_file}\n")
-            ccfile.write(
-                f"!echo \"\\nTop 20 memory consumers\\n\" >> {self.output_file}\n")
-            ccfile.write(
-                "ps -G | sed 's/>//g' | sort -k 8,8 -n |  awk '$8 ~ /[0-9]/{ $8 = $8/1024\" MB\"; print }' | tail -20 | sort -r -k8,8 -g " f">> {self.output_file}\n")
-            ccfile.write(f"quit >> {self.output_file}\n")
+        commands_file = "{}{}".format(self.temp_working_dir.name, "/crash_commands")
+
+        with open(commands_file, "w") as ccfile:
+            # (mkg): the file uses self-append to evaluate commands depend on
+            # the information extracted from a prior command invocation. This
+            # is possible because POSIX guarantees that:
+            #   "If a read() of file data can be proven (by any means) to occur
+            #   after a write() of the data, it must reflect that write(), even
+            #   if the calls are made by different processes."
+            commands_file_content = fr"""
+            !echo "timestamp: {time.time()}"
+            !echo "---------------------------------------" >> {self.output_file}
+            !echo "Output of 'sys'" >> {self.output_file}
+            !echo "---------------------------------------" >> {self.output_file}
+            sys >> {self.output_file}
+            !echo "---------------------------------------" >> {self.output_file}
+            !echo "Output of 'bt'" >> {self.output_file}
+            !echo "---------------------------------------" >> {self.output_file}
+            bt >> {self.output_file}
+            !echo "---------------------------------------" >> {self.output_file}
+            !echo "Output of 'log' with audit messages filtered out" >> {self.output_file}
+            !echo "---------------------------------------" >> {self.output_file}
+            log | grep -vi audit >> {self.output_file}
+            !echo "---------------------------------------" >> {self.output_file}
+            !echo "Output of 'kmem -i'" >> {self.output_file}
+            !echo "---------------------------------------" >> {self.output_file}
+            kmem -i >> {self.output_file}
+            !echo "---------------------------------------" >> {self.output_file}
+            !echo "Output of 'dev -d'" >> {self.output_file}
+            !echo "---------------------------------------" >> {self.output_file}
+            dev -d >> {self.output_file}
+            !echo "---------------------------------------" >> {self.output_file}
+            !echo "Output of 'mount'" >> {self.output_file}
+            !echo "---------------------------------------" >> {self.output_file}
+            mount >> {self.output_file}
+            !echo "---------------------------------------" >> {self.output_file}
+            !echo "Output of 'files'" >> {self.output_file}
+            !echo "---------------------------------------" >> {self.output_file}
+            files >> {self.output_file}
+            !echo "---------------------------------------" >> {self.output_file}
+            !echo "Output of 'vm'" >> {self.output_file}
+            !echo "---------------------------------------" >> {self.output_file}
+            vm >> {self.output_file}
+            !echo "---------------------------------------" >> {self.output_file}
+            !echo "Output of 'net'" >> {self.output_file}
+            !echo "---------------------------------------" >> {self.output_file}
+            net >> {self.output_file}
+            !echo "---------------------------------------" >> {self.output_file}
+            !echo "Oldest blocked processes" >> {self.output_file}
+            !echo "---------------------------------------" >> {self.output_file}
+            ps -m | grep UN | tail >> {self.output_file}
+            !echo "---------------------------------------" >> {self.output_file}
+            !echo "Top 20 memory consumers" >> {self.output_file}
+            !echo "---------------------------------------" >> {self.output_file}
+            ps -G | sed 's/>//g' | sort -k 8,8 -n |  awk '$8 ~ /[0-9]/{{ $8 = $8/1024" MB"; print }}' | tail -20 | sort -r -k8,8 -g >> {self.output_file}
+            !echo "\n!echo '---------------------------------------' >> {self.output_file}" >> {commands_file}
+            !echo "\n!echo 'BT of the oldest blocked process' >> {self.output_file}" >> {commands_file}
+            !echo "\n!echo '---------------------------------------' >> {self.output_file}" >> {commands_file}
+            ps -m | grep UN | tail -n1 | grep -oE "PID: [0-9]+" | grep -oE "[0-9]+" | awk '{{print "bt " $1 " >> {self.output_file}"}}' >> {commands_file}
+            !echo "\nquit >> {self.output_file}" >> {commands_file}
+            !echo "" >> {self.output_file}"""
+            # (mkg): The last empty echo is important to allow
+            # crash to pick up the commands appended to the command
+            # file at the runtime.
+            final_cmdfile_contents = textwrap.dedent(commands_file_content).strip()
+            ccfile.write(final_cmdfile_contents)
+            logging.debug(f"command file {commands_file} rendered with contents: {final_cmdfile_contents}")
             return ccfile.name
 
     @staticmethod
