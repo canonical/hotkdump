@@ -8,6 +8,7 @@ import tempfile
 import shutil
 import time
 import textwrap
+from datetime import datetime
 
 try:
     from ubuntutools.pullpkg import PullPkg
@@ -141,8 +142,11 @@ class hotkdump:
         logging.info(
             f"initializing hotkdump, SF#{self.case_number}, vmcore: {self.vmcore_file}")
 
-        with open(self.output_file, "w"):
-            pass
+        tstamp_now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        vmcore_filename  = self.vmcore_file.rsplit('/', 1)[-1]
+        with open(self.output_file, "w") as outfile:
+            outfile.write("Timestamp: " + tstamp_now+"\n")
+            outfile.write("Processing " + vmcore_filename+"\n")
 
         self.kdump_header = kdump_file_header(self.vmcore_file)
 
