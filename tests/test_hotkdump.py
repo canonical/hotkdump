@@ -1,122 +1,26 @@
+#!/usr/bin/env python3
+
+# Copyright 2023 Canonical Limited.
+# SPDX-License-Identifier: GPL-3.0
+
+"""
+`hotkdump` class unit tests.
+"""
+
 import unittest
-import hotkdump
+import hkd
 import mock
-import io
-import os
 import textwrap
 
-
-def assert_has_no_such_calls(self, *args, **kwargs):
-    for call in list(*args):
-        try:
-            self.assert_has_calls([call])
-        except AssertionError:
-            continue
-        raise Exception('Expected %s to not have been called.' %
-                        self._format_mock_call_signature(args, kwargs))
+from utils import (
+    assert_has_no_such_calls,
+    mock_file,
+    mock_stat_obj
+)
 
 
 mock.Mock.assert_has_no_such_calls = assert_has_no_such_calls
-
-
-class mock_file:
-    """Poor man's mock file.
-    """
-
-    def init_ctx(self):
-        class io_adapter(io.BytesIO):
-            def write(self, value):
-                if isinstance(value, str):
-                    return super().write(value.encode())
-                return super().write(value)
-
-        self.io = io_adapter(self.bytes)
-        self.io.name = self.name
-
-    def __init__(self, bytes, name) -> None:
-        self.bytes = bytes
-        self.name = name
-
-    def __enter__(self):
-        self.init_ctx()
-        return self.io
-
-    def __exit__(self, *args, **kwargs):
-        self.io = None
-
-    def __call__(self, *args, **kwargs):
-        return self
-
-    def write(self, *args, **kwargs):
-        pass
-
-
-class mock_stat_obj:
-    def __init__(self, name, mock_data) -> None:
-        self.name = name
-        self.mock_data = mock_data
-
-    @property
-    def st_atime(self):
-        return self.mock_data[self.name]["atime"]
-
-    @property
-    def st_size(self):
-        return self.mock_data[self.name]["size"]
-
-
 mock_hdr = b'KDUMP   \x01\x02\x03\x04sys\0node\0release\0#version-443\0machine\0domain\0\0'
-mock_hdr_shifted = os.urandom(8184) + mock_hdr
-mock_hdr_invalid_no_sig = os.urandom(4096)
-
-
-@mock.patch.multiple(
-    "os",
-    remove=lambda x: True,
-    listdir=lambda x: [],
-    stat=lambda x: "a",
-    makedirs=lambda *a, **kw: None
-)
-@mock.patch.multiple(
-    "os.path",
-    dirname=lambda x: x,
-    realpath=lambda x: x,
-    exists=lambda x: True
-)
-@mock.patch.multiple(
-    "shutil",
-    which=lambda x: x
-)
-class HotkdumpKdumpHdrTest(unittest.TestCase):
-
-    @mock.patch('builtins.open', mock_file(bytes=mock_hdr, name="name"))
-    def test_kdump_hdr(self):
-        uut = hotkdump.hotkdump("1", "vmcore")
-        self.assertEqual(uut.kdump_header.kdump_version, 67305985)
-        self.assertEqual(uut.kdump_header.domain, "domain")
-        self.assertEqual(uut.kdump_header.machine, "machine")
-        self.assertEqual(uut.kdump_header.node, "node")
-        self.assertEqual(uut.kdump_header.release, "release")
-        self.assertEqual(uut.kdump_header.system, "sys")
-        self.assertEqual(uut.kdump_header.version, "#version-443")
-        self.assertEqual(uut.kdump_header.normalized_version, "version")
-
-    @mock.patch('builtins.open', mock_file(bytes=mock_hdr_shifted, name="name"))
-    def test_kdump_hdr_shifted(self):
-        uut = hotkdump.hotkdump("1", "vmcore")
-        self.assertEqual(uut.kdump_header.kdump_version, 67305985)
-        self.assertEqual(uut.kdump_header.domain, "domain")
-        self.assertEqual(uut.kdump_header.machine, "machine")
-        self.assertEqual(uut.kdump_header.node, "node")
-        self.assertEqual(uut.kdump_header.release, "release")
-        self.assertEqual(uut.kdump_header.system, "sys")
-        self.assertEqual(uut.kdump_header.version, "#version-443")
-        self.assertEqual(uut.kdump_header.normalized_version, "version")
-
-    @mock.patch('builtins.open', mock_file(bytes=mock_hdr_invalid_no_sig, name="name"))
-    def test_kdump_hdr_no_sig(self):
-        self.assertRaises(hotkdump.ExceptionWithLog,
-                          hotkdump.hotkdump, "1", "vmcore")
 
 
 @mock.patch.multiple(
@@ -140,15 +44,15 @@ class HotkdumpKdumpHdrTest(unittest.TestCase):
 class HotkdumpTest(unittest.TestCase):
 
     def test_default_construct(self):
-        uut = hotkdump.hotkdump("1", "vmcore")
+        uut = hkd.hotkdump("1", "vmcore")
         self.assertEqual(uut.case_number, "1")
         self.assertEqual(uut.vmcore_file, "vmcore")
-        self.assertEqual(uut.output_file, hotkdump.default_output_file)
-        self.assertEqual(uut.log_file, hotkdump.default_log_file)
-        self.assertEqual(uut.ddebs_path, hotkdump.default_ddebs_path)
+        self.assertEqual(uut.output_file, hkd.default_output_file)
+        self.assertEqual(uut.log_file, hkd.default_log_file)
+        self.assertEqual(uut.ddebs_path, hkd.default_ddebs_path)
 
     def test_construct(self):
-        uut = hotkdump.hotkdump("1", "vmcore", "opf", "log", "ddeb")
+        uut = hkd.hotkdump("1", "vmcore", "opf", "log", "ddeb")
         self.assertEqual(uut.case_number, "1")
         self.assertEqual(uut.vmcore_file, "vmcore")
         self.assertEqual(uut.output_file, "opf")
@@ -156,7 +60,7 @@ class HotkdumpTest(unittest.TestCase):
         self.assertEqual(uut.ddebs_path, "ddeb")
 
     def test_arch(self):
-        uut = hotkdump.hotkdump("1", "vmcore")
+        uut = hkd.hotkdump("1", "vmcore")
         uut.kdump_header.machine = "x86_64"
         self.assertEqual(uut.get_architecture(), "amd64")
         uut.kdump_header.machine = "aarch64"
@@ -164,17 +68,29 @@ class HotkdumpTest(unittest.TestCase):
         uut.kdump_header.machine = "invalid"
         self.assertRaises(NotImplementedError, uut.get_architecture)
 
+    @mock.patch('builtins.open', mock_file(bytes=mock_hdr, name="name"))
+    def test_kdump_hdr(self):
+        uut = hkd.hotkdump("1", "vmcore")
+        self.assertEqual(uut.kdump_header.kdump_version, 67305985)
+        self.assertEqual(uut.kdump_header.domain, "domain")
+        self.assertEqual(uut.kdump_header.machine, "machine")
+        self.assertEqual(uut.kdump_header.node, "node")
+        self.assertEqual(uut.kdump_header.release, "release")
+        self.assertEqual(uut.kdump_header.system, "sys")
+        self.assertEqual(uut.kdump_header.version, "#version-443")
+        self.assertEqual(uut.kdump_header.normalized_version, "version")
+
     def test_find_crash_executable_symlink_exists(self):
-        uut = hotkdump.hotkdump("1", "vmcore")
+        uut = hkd.hotkdump("1", "vmcore")
         with mock.patch.multiple("os.path",
                                  dirname=lambda *a, **kw: "/root/dir",
                                  realpath=lambda *a, **kw: "rp",
                                  exists=lambda *a, **kw: True) as _:
             value = uut.find_crash_executable()
-            self.assertEqual(value, "/root/dir/crash")
+            self.assertEqual(value, "/root/dir/../crash")
 
     def test_find_crash_executable_nosymlink_but_path_exists(self):
-        uut = hotkdump.hotkdump("1", "vmcore")
+        uut = hkd.hotkdump("1", "vmcore")
         with mock.patch.multiple("os.path",
                                  dirname=lambda *a, **kw: "/root/dir",
                                  realpath=lambda *a, **kw: "rp",
@@ -184,70 +100,70 @@ class HotkdumpTest(unittest.TestCase):
                 self.assertEqual(value, "/usr/mybin/crash")
 
     def test_find_crash_executable_notfound(self):
-        uut = hotkdump.hotkdump("1", "vmcore")
+        uut = hkd.hotkdump("1", "vmcore")
         with mock.patch.multiple("os.path",
                                  dirname=lambda *a, **kw: "/root/dir",
                                  realpath=lambda *a, **kw: "rp",
                                  exists=lambda *a, **kw: False):
             with mock.patch("shutil.which", lambda *a, **kw: None):
-                self.assertRaises(hotkdump.ExceptionWithLog,
+                self.assertRaises(hkd.ExceptionWithLog,
                                   uut.find_crash_executable)
 
     def test_write_crash_commands_file(self):
-        uut = hotkdump.hotkdump("1", "vmcore")
-        uut.output_file = "hotkdump.test"
+        uut = hkd.hotkdump("1", "vmcore")
+        uut.output_file = "hkd.test"
         uut.temp_working_dir.name = "/tmpdir"
         expected_output = textwrap.dedent(r"""
-        !echo "---------------------------------------" >> hotkdump.test
-        !echo "Output of 'sys'" >> hotkdump.test
-        !echo "---------------------------------------" >> hotkdump.test
-        sys >> hotkdump.test
-        !echo "---------------------------------------" >> hotkdump.test
-        !echo "Output of 'bt'" >> hotkdump.test
-        !echo "---------------------------------------" >> hotkdump.test
-        bt >> hotkdump.test
-        !echo "---------------------------------------" >> hotkdump.test
-        !echo "Output of 'log' with audit messages filtered out" >> hotkdump.test
-        !echo "---------------------------------------" >> hotkdump.test
-        log | grep -vi audit >> hotkdump.test
-        !echo "---------------------------------------" >> hotkdump.test
-        !echo "Output of 'kmem -i'" >> hotkdump.test
-        !echo "---------------------------------------" >> hotkdump.test
-        kmem -i >> hotkdump.test
-        !echo "---------------------------------------" >> hotkdump.test
-        !echo "Output of 'dev -d'" >> hotkdump.test
-        !echo "---------------------------------------" >> hotkdump.test
-        dev -d >> hotkdump.test
-        !echo "---------------------------------------" >> hotkdump.test
-        !echo "Output of 'mount'" >> hotkdump.test
-        !echo "---------------------------------------" >> hotkdump.test
-        mount >> hotkdump.test
-        !echo "---------------------------------------" >> hotkdump.test
-        !echo "Output of 'files'" >> hotkdump.test
-        !echo "---------------------------------------" >> hotkdump.test
-        files >> hotkdump.test
-        !echo "---------------------------------------" >> hotkdump.test
-        !echo "Output of 'vm'" >> hotkdump.test
-        !echo "---------------------------------------" >> hotkdump.test
-        vm >> hotkdump.test
-        !echo "---------------------------------------" >> hotkdump.test
-        !echo "Output of 'net'" >> hotkdump.test
-        !echo "---------------------------------------" >> hotkdump.test
-        net >> hotkdump.test
-        !echo "---------------------------------------" >> hotkdump.test
-        !echo "Oldest blocked processes" >> hotkdump.test
-        !echo "---------------------------------------" >> hotkdump.test
-        ps -m | grep UN | tail >> hotkdump.test
-        !echo "---------------------------------------" >> hotkdump.test
-        !echo "Top 20 memory consumers" >> hotkdump.test
-        !echo "---------------------------------------" >> hotkdump.test
-        ps -G | sed 's/>//g' | sort -k 8,8 -n |  awk '$8 ~ /[0-9]/{ $8 = $8/1024" MB"; print }' | tail -20 | sort -r -k8,8 -g >> hotkdump.test
-        !echo "\n!echo '---------------------------------------' >> hotkdump.test" >> /tmpdir/crash_commands
-        !echo "\n!echo 'BT of the oldest blocked process' >> hotkdump.test" >> /tmpdir/crash_commands
-        !echo "\n!echo '---------------------------------------' >> hotkdump.test" >> /tmpdir/crash_commands
-        ps -m | grep UN | tail -n1 | grep -oE "PID: [0-9]+" | grep -oE "[0-9]+" | awk '{print "bt " $1 " >> hotkdump.test"}' >> /tmpdir/crash_commands
-        !echo "\nquit >> hotkdump.test" >> /tmpdir/crash_commands
-        !echo "" >> hotkdump.test
+        !echo "---------------------------------------" >> hkd.test
+        !echo "Output of 'sys'" >> hkd.test
+        !echo "---------------------------------------" >> hkd.test
+        sys >> hkd.test
+        !echo "---------------------------------------" >> hkd.test
+        !echo "Output of 'bt'" >> hkd.test
+        !echo "---------------------------------------" >> hkd.test
+        bt >> hkd.test
+        !echo "---------------------------------------" >> hkd.test
+        !echo "Output of 'log' with audit messages filtered out" >> hkd.test
+        !echo "---------------------------------------" >> hkd.test
+        log | grep -vi audit >> hkd.test
+        !echo "---------------------------------------" >> hkd.test
+        !echo "Output of 'kmem -i'" >> hkd.test
+        !echo "---------------------------------------" >> hkd.test
+        kmem -i >> hkd.test
+        !echo "---------------------------------------" >> hkd.test
+        !echo "Output of 'dev -d'" >> hkd.test
+        !echo "---------------------------------------" >> hkd.test
+        dev -d >> hkd.test
+        !echo "---------------------------------------" >> hkd.test
+        !echo "Output of 'mount'" >> hkd.test
+        !echo "---------------------------------------" >> hkd.test
+        mount >> hkd.test
+        !echo "---------------------------------------" >> hkd.test
+        !echo "Output of 'files'" >> hkd.test
+        !echo "---------------------------------------" >> hkd.test
+        files >> hkd.test
+        !echo "---------------------------------------" >> hkd.test
+        !echo "Output of 'vm'" >> hkd.test
+        !echo "---------------------------------------" >> hkd.test
+        vm >> hkd.test
+        !echo "---------------------------------------" >> hkd.test
+        !echo "Output of 'net'" >> hkd.test
+        !echo "---------------------------------------" >> hkd.test
+        net >> hkd.test
+        !echo "---------------------------------------" >> hkd.test
+        !echo "Oldest blocked processes" >> hkd.test
+        !echo "---------------------------------------" >> hkd.test
+        ps -m | grep UN | tail >> hkd.test
+        !echo "---------------------------------------" >> hkd.test
+        !echo "Top 20 memory consumers" >> hkd.test
+        !echo "---------------------------------------" >> hkd.test
+        ps -G | sed 's/>//g' | sort -k 8,8 -n |  awk '$8 ~ /[0-9]/{ $8 = $8/1024" MB"; print }' | tail -20 | sort -r -k8,8 -g >> hkd.test
+        !echo "\n!echo '---------------------------------------' >> hkd.test" >> /tmpdir/crash_commands
+        !echo "\n!echo 'BT of the oldest blocked process' >> hkd.test" >> /tmpdir/crash_commands
+        !echo "\n!echo '---------------------------------------' >> hkd.test" >> /tmpdir/crash_commands
+        ps -m | grep UN | tail -n1 | grep -oE "PID: [0-9]+" | grep -oE "[0-9]+" | awk '{print "bt " $1 " >> hkd.test"}' >> /tmpdir/crash_commands
+        !echo "\nquit >> hkd.test" >> /tmpdir/crash_commands
+        !echo "" >> hkd.test
         """).strip()
         with mock.patch("builtins.open", new_callable=mock.mock_open()) as mo:
             contents = None
@@ -263,7 +179,7 @@ class HotkdumpTest(unittest.TestCase):
             self.assertEqual(contents, expected_output)
 
     def test_exec(self):
-        uut = hotkdump.hotkdump("1", "vmcore")
+        uut = hkd.hotkdump("1", "vmcore")
         with mock.patch("subprocess.Popen", mock.MagicMock()) as p:
             uut.exec("a", "args", "wd")
             p.assert_called_once_with(
@@ -323,7 +239,7 @@ class HotkdumpTest(unittest.TestCase):
             ("5.4.0-146-generic-hwe-21.04", "5.4.0-146-generic-hwe-21.04")
         ]
 
-        uut = hotkdump.hotkdump("1", "vmcore")
+        uut = hkd.hotkdump("1", "vmcore")
         for input_str, expected_output in test_cases_valid:
             with self.subTest(input_str=input_str):
                 self.assertEqual(uut.strip_release_variant_tags(
@@ -331,11 +247,11 @@ class HotkdumpTest(unittest.TestCase):
 
         for input_str, expected_output in test_cases_invalid:
             with self.subTest(input_str=input_str):
-                self.assertRaises(hotkdump.ExceptionWithLog,
+                self.assertRaises(hkd.ExceptionWithLog,
                                   uut.strip_release_variant_tags, input_str)
 
     @mock.patch("os.utime")
-    @mock.patch("hotkdump.PullPkg")
+    @mock.patch("hkd.hkd_impl.PullPkg")
     def test_maybe_download_vmlinux_ddeb(self, mock_pullpkg, mock_utime):
         # Set up mock return values
         mock_pull = mock.MagicMock()
@@ -343,28 +259,29 @@ class HotkdumpTest(unittest.TestCase):
 
         # mock_pull.return_value.pull
 
-        uut = hotkdump.hotkdump("1", "vmcore")
+        uut = hkd.hotkdump("1", "vmcore")
         uut.kdump_header.release = "5.15.0-1030-gcp"
         uut.kdump_header.machine = "x86_64"
         uut.kdump_header.version = "#37-Ubuntu SMP Tue Feb 14 19:37:08 UTC 2023"
         uut.kdump_header.normalized_version = "37"
+        uut.switch_cwd = mock.MagicMock()
 
         # Test downloading a new ddeb file
 
         expected_ddeb_path = "linux-image-unsigned-5.15.0-1030-gcp-dbgsym_5.15.0-1030.37_amd64.ddeb"
-        with mock.patch.object(uut, "switch_cwd", mock.MagicMock()):
-            with mock.patch("os.path.exists") as mock_exists:
-                mock_exists.side_effect = [False, True]
-                result = uut.maybe_download_vmlinux_ddeb()
 
-                mock_exists.assert_called()
+        with mock.patch("os.path.exists") as mock_exists:
+            mock_exists.side_effect = [False, True]
+            result = uut.maybe_download_vmlinux_ddeb()
 
-                # Assert that pullpkg was invoked with the correct arguments
-                mock_pull.assert_called_once_with(
-                    ["--distro", "ubuntu", "--arch", "amd64", "--pull", "ddebs", "linux-image-unsigned-5.15.0-1030-gcp", "5.15.0-1030.37"])
+            mock_exists.assert_called()
 
-                # Assert that the expected ddeb file path was returned
-                self.assertEqual(result, expected_ddeb_path)
+            # Assert that pullpkg was invoked with the correct arguments
+            mock_pull.assert_called_once_with(
+                ["--distro", "ubuntu", "--arch", "amd64", "--pull", "ddebs", "linux-image-unsigned-5.15.0-1030-gcp", "5.15.0-1030.37"])
+
+            # Assert that the expected ddeb file path was returned
+            self.assertEqual(result, expected_ddeb_path)
 
         mock_pull.reset_mock()
         # Test reusing an existing ddeb file
@@ -389,12 +306,12 @@ class HotkdumpTest(unittest.TestCase):
         mock_pull.return_value = Exception("Error")
         with mock.patch("os.path.exists") as mock_exists:
             mock_exists.return_value = False
-            with self.assertRaises(hotkdump.ExceptionWithLog):
+            with self.assertRaises(hkd.ExceptionWithLog):
                 uut.maybe_download_vmlinux_ddeb()
 
     def test_post_run_ddeb_count_policy(self):
         # Set up test data
-        uut = hotkdump.hotkdump("1", "vmcore")
+        uut = hkd.hotkdump("1", "vmcore")
         uut.ddebs_path = "/path/to/ddebs"
         uut.ddeb_retention_enabled = True
         uut.ddeb_retention_max_age_secs = None
@@ -452,7 +369,7 @@ class HotkdumpTest(unittest.TestCase):
 
     def test_post_run_ddeb_age_policy(self):
         # Set up test data
-        uut = hotkdump.hotkdump("1", "vmcore")
+        uut = hkd.hotkdump("1", "vmcore")
         uut.ddebs_path = "/path/to/ddebs"
         uut.ddeb_retention_enabled = True
         uut.ddeb_retention_size_low_wm_bytes = None
@@ -494,7 +411,7 @@ class HotkdumpTest(unittest.TestCase):
 
     def test_post_run_ddeb_total_size_policy(self):
         # Set up test data
-        uut = hotkdump.hotkdump("1", "vmcore")
+        uut = hkd.hotkdump("1", "vmcore")
         uut.ddebs_path = "/path/to/ddebs"
         uut.ddeb_retention_enabled = True
         uut.ddeb_retention_size_low_wm_bytes = 25000
@@ -540,7 +457,7 @@ class HotkdumpTest(unittest.TestCase):
             mock_remove.assert_has_no_such_calls(not_expected_calls)
 
     def test_post_run_ddeb_retention_disabled(self):
-        uut = hotkdump.hotkdump("1", "vmcore")
+        uut = hkd.hotkdump("1", "vmcore")
         uut.ddebs_path = "/path/to/ddebs"
         uut.ddeb_retention_enabled = False
         with mock.patch(
