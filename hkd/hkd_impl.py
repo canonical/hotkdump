@@ -30,6 +30,14 @@ except ModuleNotFoundError:
 from hkd.exceptions import ExceptionWithLog
 from hkd.utils import pretty_size
 from hkd.kdump_file_header import kdump_file_header
+from hkd.folder_retention_manager import(
+    folder_retention_manager,
+    rpolicy_no_criteria,
+    rpolicy_age,
+    rpolicy_total_file_count,
+    rpolicy_total_file_size
+)
+
 
 
 default_output_file = "hotkdump.out"
@@ -403,68 +411,19 @@ class hotkdump:
     def post_run(self):
         """Perform post-run tasks
         """
-        # Retrieve all ddebs and their stat() from the ddeb folder
-        ddebs = [(f"{self.ddebs_path}/{file}", os.stat(f"{self.ddebs_path}/{file}"))
-                 for file in os.listdir(self.ddebs_path) if file.endswith(".ddeb")]
-        # Sort ddebs by their last access time
-        ddebs.sort(key=lambda f: f[1].st_atime, reverse=True)
-
-        # TODO(mkg): Wrap this logic into its own class
-        # i.e. RetentionPolicy
-
-        def remove_ddeb(ddeb_info, reason):
-            (ddeb_path, ddeb_stat) = ddeb_info
-            os.remove(ddeb_path)
-            logging.debug(
-                f"removed {ddeb_path} to reclaim {pretty_size(ddeb_stat.st_size)}. age: {(time.time() - ddeb_stat.st_atime):.2f} seconds. reason: {reason}")
+        retention_mgr = folder_retention_manager([self.ddebs_path], lambda file : file.endswith(".ddeb"))
 
         if not self.ddeb_retention_enabled:
-            logging.debug(f"ddeb retention is disabled, starting cleanup.")
-            for ddeb_info in ddebs:
-                remove_ddeb(ddeb_info, "retention disabled")
-            return
+            retention_mgr.add_policy(rpolicy_no_criteria())
+        else:
+            if self.ddeb_retention_max_ddeb_count:
+                retention_mgr.add_policy(rpolicy_total_file_count(self.ddeb_retention_max_ddeb_count))
+            if self.ddeb_retention_max_age_secs:
+                retention_mgr.add_policy(rpolicy_age(self.ddeb_retention_max_age_secs))
+            if self.ddeb_retention_size_low_wm_bytes and self.ddeb_retention_size_high_wm_bytes:
+                retention_mgr.add_policy(rpolicy_total_file_size(self.ddeb_retention_size_low_wm_bytes, self.ddeb_retention_size_high_wm_bytes))
 
-        # Prune based on count
-        if self.ddeb_retention_max_ddeb_count and len(ddebs) > self.ddeb_retention_max_ddeb_count:
-            ddebs_to_remove = ddebs[self.ddeb_retention_max_ddeb_count:]
-
-            for ddeb_info in ddebs_to_remove:
-                remove_ddeb(ddeb_info, "count")
-
-            # Update the list
-            ddebs = list(filter(lambda i: i not in ddebs_to_remove, ddebs))
-
-        # Prune based on age
-        if self.ddeb_retention_max_age_secs:
-            ddebs_to_remove = [v for v in ddebs if (
-                time.time() - v[1].st_atime) >= self.ddeb_retention_max_age_secs]
-            for ddeb_info in ddebs_to_remove:
-                remove_ddeb(ddeb_info, "old age")
-
-            # Update the list
-            ddebs = list(filter(lambda i: i not in ddebs_to_remove, ddebs))
-
-        if self.ddeb_retention_size_low_wm_bytes and self.ddeb_retention_size_high_wm_bytes:
-            # Check if size of all ddebs has reached to the high watermark
-            total_ddeb_size = sum(
-                [ddeb_info[1].st_size for ddeb_info in ddebs])
-            if total_ddeb_size >= self.ddeb_retention_size_high_wm_bytes:
-                logging.debug(
-                    f"total ddeb size of {pretty_size(total_ddeb_size)} exceeds the high watermark {pretty_size(self.ddeb_retention_size_high_wm_bytes)}, starting cleanup.")
-                # Remove .ddebs until total size is below the low watermark
-                while len(ddebs) > 0:
-                    total_ddeb_size = sum(
-                        [ddeb_info[1].st_size for ddeb_info in ddebs])
-                    if total_ddeb_size < self.ddeb_retention_size_low_wm_bytes:
-                        logging.debug(
-                            f"total ddeb folder size is now below {pretty_size(self.ddeb_retention_size_low_wm_bytes)} low watermark, stopping cleanup.")
-                        break
-                    ddeb_info = ddebs.pop()
-                    remove_ddeb(ddeb_info, "size")
-
-        logging.debug(
-            f"postrun-aftermath: ddeb folder final size {pretty_size(sum([ddeb_info[1].st_size for ddeb_info in ddebs]))}, {len(ddebs)} cached ddebs remain.")
-
+        retention_mgr.execute_policies()
 
 def main():
     """Entry point for command-line invocations
