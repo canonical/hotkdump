@@ -89,7 +89,8 @@ class hotkdump:
         vmcore_filename = self.vmcore_file.rsplit('/', 1)[-1]
         with open(self.output_file, "w") as outfile:
             outfile.write(
-                "{tstamp_now}: processing {vmcore_filename} (SF# {self.case_number})\n")
+                   "{0}: processing {1} (SF# {2})\n".format(tstamp_now, vmcore_filename, self.case_number))
+
 
         self.kdump_header = kdump_file_header(self.vmcore_file)
 
