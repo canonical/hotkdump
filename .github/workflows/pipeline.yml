@@ -1,0 +1,41 @@
+name: CI
+on:
+  pull_request:
+    branches: [main]
+  push:
+permissions:
+  contents: read #  to fetch code (actions/checkout)
+
+jobs:
+  Test:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-18.04
+            vars: { toxenv: py36, aptpkg: python3.6 }
+          - os: ubuntu-18.04
+            vars: { toxenv: py37, aptpkg: python3.7 }
+          - os: ubuntu-18.04
+            vars: { toxenv: py38, aptpkg: python3.8 }
+          - os: ubuntu-20.04
+            vars: { toxenv: py38, aptpkg: python3.8 }
+          - os: ubuntu-20.04
+            vars: { toxenv: py39, aptpkg: python3.9 }
+          - os: ubuntu-22.04
+            vars: { toxenv: py310, aptpkg: python3.10 }
+          - os: ubuntu-22.04
+            vars: { toxenv: py311, aptpkg: python3.11 }
+      fail-fast: true
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Dependencies
+        run: |
+          sudo apt -y update
+          sudo apt -y install python3 python3-pip
+          sudo apt -y install ${{ matrix.vars.aptpkg }}
+          pip3 install tox
+      - name: Run unit tests ()
+        run: |
+          echo "Environment" ${{ matrix.vars.toxenv }}
+          tox -e "${{ matrix.vars.toxenv }}"
