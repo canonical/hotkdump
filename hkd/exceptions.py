@@ -11,7 +11,11 @@ import logging
 
 
 class ExceptionWithLog(Exception):
-
+    """Exception type with automatic logging."""
     def __init__(self, msg) -> None:
-        logging.error(msg)
+        logging.error("EXCEPTION: %s", msg)
         super().__init__(msg)
+
+class NotAKernelCrashDumpException(ExceptionWithLog):
+    """Exception thrown when a file given to kdump_file_header
+    is not recognized as a crash dump file."""

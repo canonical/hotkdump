@@ -9,7 +9,7 @@
 
 import os
 import logging
-from hkd.exceptions import ExceptionWithLog
+from hkd.exceptions import NotAKernelCrashDumpException
 
 class kdump_file_header(object):
     """Helper class for reading kdump file
@@ -26,6 +26,7 @@ class kdump_file_header(object):
         Raises:
             Exception: If the kdump_file_path is not recognized as a kdump file
         """
+
         with open(kdump_file_path, 'rb') as fd:
 
             # Let's be more forgiving about locating
@@ -36,7 +37,7 @@ class kdump_file_header(object):
             offset = bytes.find(expected_magic)
 
             if offset == -1:
-                raise ExceptionWithLog(
+                raise NotAKernelCrashDumpException(
                     f"{kdump_file_path} is not a kernel crash dump file")
 
             # Skip the magic
@@ -52,6 +53,7 @@ class kdump_file_header(object):
             self.domain = self.readcstr(fd)
             self.normalized_version = self.version.split("-")[0].lstrip("#")
             logging.debug(f"kdump_hdr: {str(self)}")
+
 
     @staticmethod
     def seek_to_first_non_nul(f):

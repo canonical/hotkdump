@@ -27,7 +27,7 @@ except ModuleNotFoundError:
     raise ModuleNotFoundError("\n\n`hotkdump` needs ubuntu.pullpkg to function.\n"
                               "Install it via `sudo apt install ubuntu-dev-tools`")
 
-from hkd.exceptions import ExceptionWithLog
+from hkd.exceptions import ExceptionWithLog, NotAKernelCrashDumpException
 from hkd.utils import pretty_size
 from hkd.kdump_file_header import kdump_file_header
 from hkd.folder_retention_manager import(
@@ -446,12 +446,11 @@ def main():
     ap.add_argument("-p", "--ddebs-path",
                     help="ddebs path", default=default_ddebs_path)
     args = vars(ap.parse_args())
-
-    hkd = hotkdump(args['casenum'], args['dump'],
-                   args['output_path'], args['log_file'],
-                   args['ddebs_path'])
-
+    hkd = None
     try:
+        hkd = hotkdump(args['casenum'], args['dump'],
+                    args['output_path'], args['log_file'],
+                    args['ddebs_path'])
 
         vmlinux_ddeb = hkd.maybe_download_vmlinux_ddeb()
         if vmlinux_ddeb == "":
@@ -464,8 +463,15 @@ def main():
             hkd.launch_crash()
         else:
             hkd.summarize_vmcore_file()
+    except FileNotFoundError:
+        logging.error("ERROR: crash dump file `%s` not found", args['dump'])
+        sys.exit(-1)
+    except NotAKernelCrashDumpException:
+        # NotAKernelCrashDumpException logs to .error() by default
+        sys.exit(-2)
     finally:
-        hkd.post_run()
+        if hkd:
+            hkd.post_run()
 
     diff = time.time() - start
     print(f"hotkdump took {round(diff, 2)} secs")
