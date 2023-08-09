@@ -8,15 +8,16 @@
 """
 
 import os
-import mock
-import unittest
+from unittest import mock, TestCase
+
 import hkd
-from utils import mock_file
+
+from tests.utils import mock_file
 
 
-mock_hdr = b'KDUMP   \x01\x02\x03\x04sys\0node\0release\0#version-443\0machine\0domain\0\0'
-mock_hdr_shifted = os.urandom(8184) + mock_hdr
-mock_hdr_invalid_no_sig = os.urandom(4096)
+MOCK_HDR = b'KDUMP   \x01\x02\x03\x04sys\0node\0release\0#version-443\0machine\0domain\0\0'
+MOCK_HDR_SHIFTED = os.urandom(8184) + MOCK_HDR
+MOCK_HDR_INVALID_NO_SIG = os.urandom(4096)
 
 
 @mock.patch.multiple(
@@ -36,10 +37,14 @@ mock_hdr_invalid_no_sig = os.urandom(4096)
     "shutil",
     which=lambda x: x
 )
-class HotkdumpKdumpHdrTest(unittest.TestCase):
+class HotkdumpKdumpHdrTest(TestCase):
+    """kdump header parsing tests"""
 
-    @mock.patch('builtins.open', mock_file(bytes=mock_hdr, name="name"))
+    @mock.patch('builtins.open', mock_file(bytes=MOCK_HDR, name="name"))
     def test_kdump_hdr(self):
+        """Test kdump file header parsing with
+        a correct header.
+        """
         uut = hkd.kdump_file_header("dummy")
         self.assertEqual(uut.kdump_version, 67305985)
         self.assertEqual(uut.domain, "domain")
@@ -50,8 +55,12 @@ class HotkdumpKdumpHdrTest(unittest.TestCase):
         self.assertEqual(uut.version, "#version-443")
         self.assertEqual(uut.normalized_version, "version")
 
-    @mock.patch('builtins.open', mock_file(bytes=mock_hdr_shifted, name="name"))
+    @mock.patch('builtins.open', mock_file(bytes=MOCK_HDR_SHIFTED, name="name"))
     def test_kdump_hdr_shifted(self):
+        """Test kdump file header parsing with
+        a correct header, but shifted forward.
+        (i.e. to simulate makedumpfile header)
+        """
         uut = hkd.kdump_file_header("dummy")
         self.assertEqual(uut.kdump_version, 67305985)
         self.assertEqual(uut.domain, "domain")
@@ -62,7 +71,10 @@ class HotkdumpKdumpHdrTest(unittest.TestCase):
         self.assertEqual(uut.version, "#version-443")
         self.assertEqual(uut.normalized_version, "version")
 
-    @mock.patch('builtins.open', mock_file(bytes=mock_hdr_invalid_no_sig, name="name"))
+    @mock.patch('builtins.open', mock_file(bytes=MOCK_HDR_INVALID_NO_SIG, name="name"))
     def test_kdump_hdr_no_sig(self):
+        """Test kdump file header parsing with
+        garbage input.
+        """
         self.assertRaises(hkd.ExceptionWithLog,
                           hkd.hotkdump, "1", "vmcore")

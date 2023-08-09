@@ -17,4 +17,11 @@ To run:
 ```bash
     # Replace <path-to-the-kdump-file> with the path of kdump file on your host
     docker run --rm --mount type=bind,source=<path-to-the-kdump-file>,target=/tmp/crash-dumpv,readonly -it hotkdump bash -c "cd /tmp && UBUNTUTOOLS_UBUNTU_DDEBS_MIRROR= hotkdump -d /tmp/crash-dumpv -c 0 && cat hotkdump.out"
+=======
+## How to run tests
+
+Running `tox -e py{36,37,38,39,310,311}` in project root directory will run all unit tests, e.g.:
+
+```bash
+    tox -e py310
 ```
