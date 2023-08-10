@@ -2,21 +2,24 @@ name: CI
 on:
   pull_request:
     branches: [main]
-  push:
 permissions:
   contents: read #  to fetch code (actions/checkout)
-
 jobs:
   Test:
     strategy:
       matrix:
         include:
-          - os: ubuntu-18.04
-            vars: { toxenv: py36, aptpkg: python3.6 }
-          - os: ubuntu-18.04
-            vars: { toxenv: py37, aptpkg: python3.7 }
-          - os: ubuntu-18.04
-            vars: { toxenv: py38, aptpkg: python3.8 }
+          # (mkg): github has deprecated ubuntu 18.04
+          # runners and apparently started removing them
+          # too. so, we're running ubuntu:18.04 containers
+          # on top of ubuntu-20.04 to get test coverage in
+          # bionic too. The rest do not need this -- yet.
+          - os: ubuntu-20.04
+            vars: { toxenv: py36, aptpkg: python3.6, container: 'ubuntu:18.04' }
+          - os: ubuntu-20.04
+            vars: { toxenv: py37, aptpkg: python3.7, container: 'ubuntu:18.04' }
+          - os: ubuntu-20.04
+            vars: { toxenv: py38, aptpkg: python3.8, container: 'ubuntu:18.04' }
           - os: ubuntu-20.04
             vars: { toxenv: py38, aptpkg: python3.8 }
           - os: ubuntu-20.04
@@ -27,14 +30,21 @@ jobs:
             vars: { toxenv: py311, aptpkg: python3.11 }
       fail-fast: true
     runs-on: ${{ matrix.os }}
+    container: ${{ matrix.vars.container }} # github actions will ignore this when unset
     steps:
       - uses: actions/checkout@v3
       - name: Install Dependencies
         run: |
-          sudo apt -y update
-          sudo apt -y install python3 python3-pip
-          sudo apt -y install ${{ matrix.vars.aptpkg }}
+          if [[ "$EUID" -ne 0 ]]; then
+            SUDO_CMD="sudo"
+          else
+            SUDO_CMD=""
+          fi
+          $SUDO_CMD apt -y update
+          $SUDO_CMD apt -y install git python3 python3-pip
+          $SUDO_CMD apt -y install ${{ matrix.vars.aptpkg }}
           pip3 install tox
+        shell: bash
       - name: Run unit tests ()
         run: |
           echo "Environment" ${{ matrix.vars.toxenv }}
