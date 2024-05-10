@@ -12,4 +12,4 @@ launchpadlib
 requests
 setuptools
 ###  EOF `ubuntu-dev-tools` requirements.txt ###
-ubuntu-dev-tools@git+https://git.launchpad.net/ubuntu/+source/ubuntu-dev-tools@204520c8ca7ec415648796b48e83a128aa22f9f0
+ubuntu-dev-tools@git+https://git.launchpad.net/ubuntu/+source/ubuntu-dev-tools@applied/ubuntu/focal-updates
