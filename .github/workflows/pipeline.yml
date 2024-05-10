@@ -28,6 +28,8 @@ jobs:
             vars: { toxenv: py310, aptpkg: python3.10 }
           - os: ubuntu-22.04
             vars: { toxenv: py311, aptpkg: python3.11 }
+          - os: ubuntu-22.04
+            vars: { toxenv: py312, aptpkg: python3.12, pipargs: --break-system-packages, container: 'ubuntu:24.04' }
       fail-fast: true
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.vars.container }} # github actions will ignore this when unset
@@ -43,7 +45,7 @@ jobs:
           $SUDO_CMD apt -y update
           $SUDO_CMD apt -y install git python3 python3-pip
           $SUDO_CMD apt -y install ${{ matrix.vars.aptpkg }}
-          pip3 install tox
+          pip3 install tox ${{ matrix.vars.pipargs }}
         shell: bash
       - name: Run unit tests ()
         run: |
