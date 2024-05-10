@@ -431,8 +431,8 @@ def main():
     """
     start = time.time()
     ap = argparse.ArgumentParser()
-    ap.add_argument("-c", "--casenum",  required=True,
-                    help="SF case number")
+    ap.add_argument("-c", "--casenum",  required=False,
+                    help="SF case number", default=0)
     ap.add_argument("-d", "--dump", required=True,
                     help="name of vmcore file")
     ap.add_argument("-i", "--interactive",
