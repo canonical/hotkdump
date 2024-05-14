@@ -10,7 +10,10 @@
 import os
 from unittest import mock, TestCase
 
-import hkd
+
+from hotkdump.core.exceptions import ExceptionWithLog
+from hotkdump.core.kdump_file_header import kdump_file_header
+from hotkdump.core.hotkdump_impl import hotkdump
 
 from tests.utils import mock_file
 
@@ -45,7 +48,7 @@ class HotkdumpKdumpHdrTest(TestCase):
         """Test kdump file header parsing with
         a correct header.
         """
-        uut = hkd.kdump_file_header("dummy")
+        uut = kdump_file_header("dummy")
         self.assertEqual(uut.kdump_version, 67305985)
         self.assertEqual(uut.domain, "domain")
         self.assertEqual(uut.machine, "machine")
@@ -61,7 +64,7 @@ class HotkdumpKdumpHdrTest(TestCase):
         a correct header, but shifted forward.
         (i.e. to simulate makedumpfile header)
         """
-        uut = hkd.kdump_file_header("dummy")
+        uut = kdump_file_header("dummy")
         self.assertEqual(uut.kdump_version, 67305985)
         self.assertEqual(uut.domain, "domain")
         self.assertEqual(uut.machine, "machine")
@@ -76,5 +79,5 @@ class HotkdumpKdumpHdrTest(TestCase):
         """Test kdump file header parsing with
         garbage input.
         """
-        self.assertRaises(hkd.ExceptionWithLog,
-                          hkd.hotkdump, "1", "vmcore")
+        self.assertRaises(ExceptionWithLog,
+                          hotkdump, "1", "vmcore")

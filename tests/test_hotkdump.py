@@ -11,7 +11,14 @@ from unittest import mock, TestCase
 
 import textwrap
 
-import hkd
+from hotkdump.core.hotkdump_impl import (
+    hotkdump,
+    default_ddebs_path,
+    default_log_file,
+    default_output_file,
+    ExceptionWithLog
+)
+
 
 from tests.utils import (
     assert_has_no_such_calls,
@@ -50,19 +57,19 @@ class HotkdumpTest(TestCase):
         that the class variables are initialized
         as expected.
         """
-        uut = hkd.hotkdump("1", "vmcore")
+        uut = hotkdump("1", "vmcore")
         self.assertEqual(uut.case_number, "1")
         self.assertEqual(uut.vmcore_file, "vmcore")
-        self.assertEqual(uut.output_file, hkd.default_output_file)
-        self.assertEqual(uut.log_file, hkd.default_log_file)
-        self.assertEqual(uut.ddebs_path, hkd.default_ddebs_path)
+        self.assertEqual(uut.output_file, default_output_file)
+        self.assertEqual(uut.log_file, default_log_file)
+        self.assertEqual(uut.ddebs_path, default_ddebs_path)
 
     def test_construct(self):
         """Explicitly construct the class with pre-determined
         values and verify that the class variables are initialized
         as expected.
         """
-        uut = hkd.hotkdump("1", "vmcore", "opf", "log", "ddeb")
+        uut = hotkdump("1", "vmcore", "opf", "log", "ddeb")
         self.assertEqual(uut.case_number, "1")
         self.assertEqual(uut.vmcore_file, "vmcore")
         self.assertEqual(uut.output_file, "opf")
@@ -74,7 +81,7 @@ class HotkdumpTest(TestCase):
         correct architecture string for different `machine`
         types.
         """
-        uut = hkd.hotkdump("1", "vmcore")
+        uut = hotkdump("1", "vmcore")
         uut.kdump_header.machine = "x86_64"
         self.assertEqual(uut.get_architecture(), "amd64")
         uut.kdump_header.machine = "aarch64"
@@ -87,7 +94,7 @@ class HotkdumpTest(TestCase):
         """Test if the kdump_header has the correct values included
         in the MOCK_HDR after opening the fake vmcore file 
         """
-        uut = hkd.hotkdump("1", "vmcore")
+        uut = hotkdump("1", "vmcore")
         self.assertEqual(uut.kdump_header.kdump_version, 67305985)
         self.assertEqual(uut.kdump_header.domain, "domain")
         self.assertEqual(uut.kdump_header.machine, "machine")
@@ -101,7 +108,7 @@ class HotkdumpTest(TestCase):
         """Verify that the hotkdump uses the crash symlink on the root
         folder if exists.
         """
-        uut = hkd.hotkdump("1", "vmcore")
+        uut = hotkdump("1", "vmcore")
         with mock.patch.multiple("os.path",
                                  dirname=lambda *a, **kw: "/root/dir",
                                  realpath=lambda *a, **kw: "rp",
@@ -113,7 +120,7 @@ class HotkdumpTest(TestCase):
         """Verify that the hotkdump uses the crash from PATH when
         the root-dir `crash` symlink does not exists.
         """
-        uut = hkd.hotkdump("1", "vmcore")
+        uut = hotkdump("1", "vmcore")
         with mock.patch.multiple("os.path",
                                  dirname=lambda *a, **kw: "/root/dir",
                                  realpath=lambda *a, **kw: "rp",
@@ -126,20 +133,20 @@ class HotkdumpTest(TestCase):
         """Verify that the hotkdump raises an exception when crash
         executable could not be found.
         """
-        uut = hkd.hotkdump("1", "vmcore")
+        uut = hotkdump("1", "vmcore")
         with mock.patch.multiple("os.path",
                                  dirname=lambda *a, **kw: "/root/dir",
                                  realpath=lambda *a, **kw: "rp",
                                  exists=lambda *a, **kw: False):
             with mock.patch("shutil.which", lambda *a, **kw: None):
-                self.assertRaises(hkd.ExceptionWithLog,
+                self.assertRaises(ExceptionWithLog,
                                   uut.find_crash_executable)
 
     def test_write_crash_commands_file(self):
         """Verify that the hotkdump `write_crash_commands_file` writes the
         correct commands file.
         """
-        uut = hkd.hotkdump("1", "vmcore")
+        uut = hotkdump("1", "vmcore")
         uut.output_file = "hkd.test"
         uut.temp_working_dir.name = "/tmpdir"
         expected_output = textwrap.dedent(r"""
@@ -211,7 +218,7 @@ class HotkdumpTest(TestCase):
         """Verify that the hotkdump calls the subprocess.Popen
         with the correct arguments.
         """
-        uut = hkd.hotkdump("1", "vmcore")
+        uut = hotkdump("1", "vmcore")
         with mock.patch("subprocess.Popen", mock.MagicMock()) as p:
             uut.exec("a", "args", "wd")
             p.assert_called_once_with(
@@ -275,7 +282,7 @@ class HotkdumpTest(TestCase):
             ("5.4.0-146-generic-hwe-21.04", "5.4.0-146-generic-hwe-21.04")
         ]
 
-        uut = hkd.hotkdump("1", "vmcore")
+        uut = hotkdump("1", "vmcore")
         for input_str, expected_output in test_cases_valid:
             with self.subTest(input_str=input_str):
                 self.assertEqual(uut.strip_release_variant_tags(
@@ -283,11 +290,11 @@ class HotkdumpTest(TestCase):
 
         for input_str, expected_output in test_cases_invalid:
             with self.subTest(input_str=input_str):
-                self.assertRaises(hkd.ExceptionWithLog,
+                self.assertRaises(ExceptionWithLog,
                                   uut.strip_release_variant_tags, input_str)
 
     @mock.patch("os.utime")
-    @mock.patch("hkd.hkd_impl.PullPkg")
+    @mock.patch("hotkdump.core.hotkdump_impl.PullPkg")
     def test_maybe_download_vmlinux_ddeb(self, mock_pullpkg, mock_utime):
         """Verify that the hotkdump:
         - calls the PullPkg when the ddeb is absent
@@ -300,7 +307,7 @@ class HotkdumpTest(TestCase):
 
         # mock_pull.return_value.pull
 
-        uut = hkd.hotkdump("1", "vmcore")
+        uut = hotkdump("1", "vmcore")
         uut.kdump_header.release = "5.15.0-1030-gcp"
         uut.kdump_header.machine = "x86_64"
         uut.kdump_header.version = "#37-Ubuntu SMP Tue Feb 14 19:37:08 UTC 2023"
@@ -348,7 +355,7 @@ class HotkdumpTest(TestCase):
         mock_pull.return_value = Exception("Error")
         with mock.patch("os.path.exists") as mock_exists:
             mock_exists.return_value = False
-            with self.assertRaises(hkd.ExceptionWithLog):
+            with self.assertRaises(ExceptionWithLog):
                 uut.maybe_download_vmlinux_ddeb()
 
     def test_post_run_ddeb_count_policy(self):
@@ -356,7 +363,7 @@ class HotkdumpTest(TestCase):
         count policy after execution as per configured.
         """
         # Set up test data
-        uut = hkd.hotkdump("1", "vmcore")
+        uut = hotkdump("1", "vmcore")
         uut.ddebs_path = "/path/to/ddebs"
         uut.ddeb_retention_enabled = True
         uut.ddeb_retention_max_age_secs = None
@@ -417,7 +424,7 @@ class HotkdumpTest(TestCase):
         age policy after execution as per configured.
         """
         # Set up test data
-        uut = hkd.hotkdump("1", "vmcore")
+        uut = hotkdump("1", "vmcore")
         uut.ddebs_path = "/path/to/ddebs"
         uut.ddeb_retention_enabled = True
         uut.ddeb_retention_size_low_wm_bytes = None
@@ -461,7 +468,7 @@ class HotkdumpTest(TestCase):
         total size policy after execution as per configured.
         """
         # Set up test data
-        uut = hkd.hotkdump("1", "vmcore")
+        uut = hotkdump("1", "vmcore")
         uut.ddebs_path = "/path/to/ddebs"
         uut.ddeb_retention_enabled = True
         uut.ddeb_retention_size_low_wm_bytes = 25000
@@ -510,7 +517,7 @@ class HotkdumpTest(TestCase):
         """Verify that the hotkdump removes the ddeb
         files post-run when the file retention is disabled.
         """
-        uut = hkd.hotkdump("1", "vmcore")
+        uut = hotkdump("1", "vmcore")
         uut.ddebs_path = "/path/to/ddebs"
         uut.ddeb_retention_enabled = False
         with mock.patch(
