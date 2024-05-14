@@ -25,3 +25,16 @@ Running `tox -e py{36,37,38,39,310,311}` in project root directory will run all 
 ```bash
     tox -e py310
 ```
+
+## How to build and install the snap
+
+Building snap requires "snapcraft", which can be installed with "sudo apt install snapcraft" or "sudo snap install snapcraft".
+
+```text
+snapcraft # will produce hotkdump_<vmaj>.<vmin>_<arch>.snap file
+snap install ./hotkdump_<vmaj>.<vmin>_<arch>.snap --dangerous
+```
+
+## Versioning
+
+The project will use <year>.<month>.[<revision>] as a versioning scheme.
