@@ -1,0 +1,59 @@
+name: hotkdump # you probably want to 'snapcraft register <name>'
+base: core22 # the base snap is the execution environment for this snap
+version: '2024.5' # just for humans, typically '1.2+git' or '1.3.2'
+summary: Easily open and analyze linux kernel crash dumps. # 79 char long summary
+description: |
+  hotkdump allows automatic analysis of Linux kernel crash dumps generated
+  with `kdump`. It also acts as a crash launcher by automatically downloading
+  the required `.ddeb` file for the crash file's kernel version, making it easier
+  for end user to open the kernel dumps.
+
+  hotkdump has an bundled version of `crash` available inside the package, and will
+  use that by default. It can also use the user-specified `crash` when needed.
+
+# ubuntutools uses APT python API to initialize the .deb package
+# and `apt_pkg.init()` needs these path/files to be present, so
+# we're pointing them to the right ones.
+layout:
+  /etc/apt/apt.conf.d:
+    bind: $SNAP_DATA/etc/apt/apt.conf.d
+  /usr/share/dpkg/cputable:
+    bind-file: $SNAP/usr/share/dpkg/cputable
+  /usr/share/dpkg/tupletable:
+    bind-file: $SNAP/usr/share/dpkg/tupletable
+  /etc/dpkg:
+    bind: $SNAP/etc/dpkg
+grade: stable # must be 'stable' to release into candidate/stable channels
+confinement: strict # use 'strict' once you have the right plugs and slots
+apps:
+  hotkdump:
+    command: bin/hotkdump
+    environment:
+      PYTHONPATH: $SNAP/usr/lib/python3/site-packages:$SNAP/usr/lib/python3/dist-packages:$PYTHONPATH
+    plugs:
+      - home
+      - network
+      - network-bind
+parts:
+  crash:
+    source: https://github.com/crash-utility/crash/archive/refs/tags/8.0.3.tar.gz
+    plugin: make
+    build-packages:
+      # The list of packages needed to build `crash`
+      - g++
+      - wget
+      - make
+      - libcurses-ocaml-dev
+      - zlib1g-dev
+      - bison
+      - texinfo
+      - python3
+  hotkdump:
+    plugin: python
+    source: .
+    build-packages:
+      - python3-pip
+    stage-packages:
+      # Needed for hotkdump
+      - ubuntu-dev-tools
+      - dpkg # needed by ubuntu-dev-tools

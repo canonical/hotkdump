@@ -1,6 +1,7 @@
 .crashrc
 *.deb
 *.ddeb
+*.snap
 extract_folder/
 *.log
 *.out
