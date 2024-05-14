@@ -52,7 +52,7 @@ jobs:
           echo "Environment" ${{ matrix.vars.toxenv }}
           tox -e "${{ matrix.vars.toxenv }}"
   Test-Snap:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - name: Install Dependencies
