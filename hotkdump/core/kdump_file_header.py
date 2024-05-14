@@ -9,7 +9,7 @@
 
 import os
 import logging
-from hkd.exceptions import NotAKernelCrashDumpException
+from hotkdump.core.exceptions import NotAKernelCrashDumpException
 
 class kdump_file_header(object):
     """Helper class for reading kdump file

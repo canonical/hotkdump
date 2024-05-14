@@ -12,7 +12,7 @@ import os
 import logging
 import time
 
-from hkd.utils import pretty_size
+from hotkdump.core.utils import pretty_size
 
 
 class retention_policy_base(abc.ABC):

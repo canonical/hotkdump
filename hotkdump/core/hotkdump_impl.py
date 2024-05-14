@@ -19,6 +19,7 @@ import time
 import textwrap
 from datetime import datetime
 import contextlib
+import traceback
 
 try:
     from ubuntutools.pullpkg import PullPkg
@@ -27,10 +28,10 @@ except ModuleNotFoundError:
     raise ModuleNotFoundError("\n\n`hotkdump` needs ubuntu.pullpkg to function.\n"
                               "Install it via `sudo apt install ubuntu-dev-tools`")
 
-from hkd.exceptions import ExceptionWithLog, NotAKernelCrashDumpException
-from hkd.utils import pretty_size
-from hkd.kdump_file_header import kdump_file_header
-from hkd.folder_retention_manager import(
+from hotkdump.core.exceptions import ExceptionWithLog, NotAKernelCrashDumpException
+from hotkdump.core.utils import pretty_size
+from hotkdump.core.kdump_file_header import kdump_file_header
+from hotkdump.core.folder_retention_manager import(
     folder_retention_manager,
     rpolicy_no_criteria,
     rpolicy_age,
@@ -39,10 +40,9 @@ from hkd.folder_retention_manager import(
 )
 
 
-
-default_output_file = "hotkdump.out"
-default_log_file = "hotkdump.log"
-default_ddebs_path = "/tmp/hotkdump/ddebs"
+default_output_file = os.path.join(tempfile.gettempdir(), "hotkdump.out")
+default_log_file =  os.path.join(tempfile.gettempdir(), "hotkdump.log")
+default_ddebs_path = os.path.join(tempfile.gettempdir(), "hotkdump", "ddebs")
 
 
 class hotkdump:
@@ -69,11 +69,11 @@ class hotkdump:
         self.ddebs_path = ddebs_path
         self.crash_executable = self.find_crash_executable()
 
-        self.ddeb_retention_enabled = False
-        self.ddeb_retention_size_high_wm_bytes = None  # (1<<30) * 2 # 2 GiB
-        self.ddeb_retention_size_low_wm_bytes = None  # (1<<30) * 4 # 4 GiB
-        self.ddeb_retention_max_age_secs = None  # 86400 * 15 # 15 days
-        self.ddeb_retention_max_ddeb_count = None  # 2
+        self.ddeb_retention_enabled = True
+        self.ddeb_retention_size_high_wm_bytes = (1<<30) * 10  # 10 GiB
+        self.ddeb_retention_size_low_wm_bytes = (1<<30) * 2  # 2 GiB
+        self.ddeb_retention_max_age_secs = 86400 * 15 # 15 days
+        self.ddeb_retention_max_ddeb_count = 5 # 5 ddebs at max
 
         if (self.ddeb_retention_size_high_wm_bytes and self.ddeb_retention_size_low_wm_bytes) and (self.ddeb_retention_size_high_wm_bytes < self.ddeb_retention_size_low_wm_bytes):
             raise ExceptionWithLog(
@@ -463,8 +463,8 @@ def main():
             hkd.launch_crash()
         else:
             hkd.summarize_vmcore_file()
-    except FileNotFoundError:
-        logging.error("ERROR: crash dump file `%s` not found", args['dump'])
+    except FileNotFoundError as e:
+        logging.error("ERROR: crash dump file `%s` not found: (%s)", args['dump'], traceback.format_exc())
         sys.exit(-1)
     except NotAKernelCrashDumpException:
         # NotAKernelCrashDumpException logs to .error() by default

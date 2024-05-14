@@ -2,17 +2,18 @@
 
 [project]
 name = "hotkdump"
-version = "0.0.1"
+version = "2024.5"
 description = "Linux kernel crashdump analysis tool"
 readme = "README.md"
 requires-python = ">=3.6"
 license = {file = "LICENSE.txt"}
+keywords = ["crash", "debugging", "kdump"]
 classifiers = [
   # How mature is this project? Common values are
   #   3 - Alpha
   #   4 - Beta
   #   5 - Production/Stable
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 4 - Beta",
 
   # Pick your license as you wish
   "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
@@ -38,10 +39,14 @@ test = ["pytest"]
 "Bug Reports" = "https://github.com/canonical/hotkdump/issues"
 
 [project.scripts]  # Optional
-hotkdump = "hkd.hkd_impl:main"
+hotkdump = "hotkdump.core.hotkdump_impl:main"
 
 [build-system]
 # These are the assumed default build requirements from pip:
 # https://pip.pypa.io/en/stable/reference/pip/#pep-517-and-518-support
 requires = ["setuptools>=43.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+
+[tool.setuptools]
+packages = ["hotkdump"]
