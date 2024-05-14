@@ -37,4 +37,4 @@ snap install ./hotkdump_<vmaj>.<vmin>_<arch>.snap --dangerous
 
 ## Versioning
 
-The project will use <year>.<month>.[<revision>] as a versioning scheme.
+The project will use `<year>.<month>.<revision>` as a versioning scheme.
