@@ -1144,7 +1144,7 @@ Output of 'net'
 ffff932682198000  lo     127.0.0.1
 ffff932682199000  enp5s0 192.168.1.221
 ---------------------------------------
-Oldest blocked processes
+Longest running blocked processes
 ---------------------------------------
 ---------------------------------------
 Top 20 memory consumers
@@ -1171,6 +1171,6 @@ Top 20 memory consumers
 1025 1017 0 ffff932686b93300 RU 0.3 10332 5.44922 MB bash
 
 ---------------------------------------
-BT of the oldest blocked process
+BT of the longest running blocked process
 ---------------------------------------
 
