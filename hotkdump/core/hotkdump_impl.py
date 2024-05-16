@@ -177,7 +177,7 @@ class hotkdump:
             kmem -i >> hotkdump.out
             !echo "\nOutput of dev -d\n" >> hotkdump.out
             dev -d >> hotkdump.out
-            !echo "\nOldest blocked processes\n" >> hotkdump.out
+            !echo "\nLongest running blocked processes\n" >> hotkdump.out
             ps -m | grep UN | tail >> hotkdump.out
             quit >> hotkdump.out
         """
@@ -229,7 +229,7 @@ class hotkdump:
             !echo "---------------------------------------" >> {self.output_file}
             net >> {self.output_file}
             !echo "---------------------------------------" >> {self.output_file}
-            !echo "Oldest blocked processes" >> {self.output_file}
+            !echo "Longest running blocked processes" >> {self.output_file}
             !echo "---------------------------------------" >> {self.output_file}
             ps -m | grep UN | tail >> {self.output_file}
             !echo "---------------------------------------" >> {self.output_file}
@@ -237,7 +237,7 @@ class hotkdump:
             !echo "---------------------------------------" >> {self.output_file}
             ps -G | sed 's/>//g' | sort -k 8,8 -n |  awk '$8 ~ /[0-9]/{{ $8 = $8/1024" MB"; print }}' | tail -20 | sort -r -k8,8 -g >> {self.output_file}
             !echo "\n!echo '---------------------------------------' >> {self.output_file}" >> {commands_file}
-            !echo "\n!echo 'BT of the oldest blocked process' >> {self.output_file}" >> {commands_file}
+            !echo "\n!echo 'BT of the longest running blocked process' >> {self.output_file}" >> {commands_file}
             !echo "\n!echo '---------------------------------------' >> {self.output_file}" >> {commands_file}
             ps -m | grep UN | tail -n1 | grep -oE "PID: [0-9]+" | grep -oE "[0-9]+" | awk '{{print "bt " $1 " >> {self.output_file}"}}' >> {commands_file}
             !echo "\nquit >> {self.output_file}" >> {commands_file}

@@ -187,7 +187,7 @@ class HotkdumpTest(TestCase):
         !echo "---------------------------------------" >> hkd.test
         net >> hkd.test
         !echo "---------------------------------------" >> hkd.test
-        !echo "Oldest blocked processes" >> hkd.test
+        !echo "Longest running blocked processes" >> hkd.test
         !echo "---------------------------------------" >> hkd.test
         ps -m | grep UN | tail >> hkd.test
         !echo "---------------------------------------" >> hkd.test
@@ -195,7 +195,7 @@ class HotkdumpTest(TestCase):
         !echo "---------------------------------------" >> hkd.test
         ps -G | sed 's/>//g' | sort -k 8,8 -n |  awk '$8 ~ /[0-9]/{ $8 = $8/1024" MB"; print }' | tail -20 | sort -r -k8,8 -g >> hkd.test
         !echo "\n!echo '---------------------------------------' >> hkd.test" >> /tmpdir/crash_commands
-        !echo "\n!echo 'BT of the oldest blocked process' >> hkd.test" >> /tmpdir/crash_commands
+        !echo "\n!echo 'BT of the longest running blocked process' >> hkd.test" >> /tmpdir/crash_commands
         !echo "\n!echo '---------------------------------------' >> hkd.test" >> /tmpdir/crash_commands
         ps -m | grep UN | tail -n1 | grep -oE "PID: [0-9]+" | grep -oE "[0-9]+" | awk '{print "bt " $1 " >> hkd.test"}' >> /tmpdir/crash_commands
         !echo "\nquit >> hkd.test" >> /tmpdir/crash_commands
