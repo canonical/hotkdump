@@ -37,7 +37,7 @@ snap install hotkdump --channel=beta
 The repository contains a `Dockerfile` for running hotkdump conveniently. In order to use it, you'll need to build it first. To build the image:
 
 ```bash
-docker build . -t hotkdump
+docker build . -t hotkdump -f extras/Dockerfile
 ```
 
 This will build a docker image named `hotkdump`. The docker image contains all the stuff needed to run `hotkdump` (e.g. crash, ubuntu-dev-tools) on a linux kernel crash dump. See `Dockerfile` for details.
