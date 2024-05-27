@@ -6,7 +6,7 @@ version = "2024.5.2"
 description = "Linux kernel crashdump analysis tool"
 readme = "README.md"
 requires-python = ">=3.6"
-license = {file = "LICENSE.txt"}
+license = { file = "LICENSE" }
 keywords = ["crash", "debugging", "kdump"]
 classifiers = [
   # How mature is this project? Common values are
@@ -32,13 +32,29 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest"]
+testing = [
+  "pytest>=7",
+  "pytest-sugar",
+  # The below are ubuntu-dev-tools's dependencies but unfortunately
+  # the requirements.txt file is not referred in setup.py so we have
+  # to list them here
+  ###  SOF `ubuntu-dev-tools` requirements.txt ###
+  "python-debian",
+  "python-debianbts",
+  "distro-info",
+  "httplib2",
+  "launchpadlib",
+  "requests",
+  "setuptools",
+  ###  EOF `ubuntu-dev-tools` requirements.txt ###
+  "ubuntu-dev-tools@git+https://git.launchpad.net/ubuntu/+source/ubuntu-dev-tools@applied/ubuntu/focal-updates",
+]
 
-[project.urls]  # Optional
+[project.urls] # Optional
 "Homepage" = "https://github.com/canonical/hotkdump"
 "Bug Reports" = "https://github.com/canonical/hotkdump/issues"
 
-[project.scripts]  # Optional
+[project.scripts] # Optional
 hotkdump = "hotkdump.core.hotkdump_impl:main"
 
 [build-system]
