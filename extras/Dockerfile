@@ -11,9 +11,8 @@ RUN apt -y update && \
     make install && \
     crash --version && \
     rm -rf /tmp/crash-8.0.3
-COPY hkd /opt/hkd
-COPY hotkdump.py /opt/hotkdump.py
-RUN chmod +x /opt/hotkdump.py && \
-    ln -sf /opt/hotkdump.py /usr/bin/hotkdump && \
+COPY hotkdump /opt/hotkdump
+RUN chmod +x /opt/hotkdump/main.py && \
+    ln -sf /opt/hotkdump/main.py /usr/bin/hotkdump && \
     ls -lrah /usr/bin/hotkdump
 
