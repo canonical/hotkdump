@@ -14,22 +14,31 @@ jobs:
           # too. so, we're running ubuntu:18.04 containers
           # on top of ubuntu-20.04 to get test coverage in
           # bionic too. The rest do not need this -- yet.
+
           - os: ubuntu-20.04
-            vars: { toxenv: py36, aptpkg: python3.6, container: 'ubuntu:18.04' }
+            toxenv: py36
+            vars: { aptpkg: python3.6, container: 'ubuntu:18.04' }
           - os: ubuntu-20.04
-            vars: { toxenv: py37, aptpkg: python3.7, container: 'ubuntu:18.04' }
+            toxenv: py37
+            vars: { aptpkg: python3.7, container: 'ubuntu:18.04' }
           - os: ubuntu-20.04
-            vars: { toxenv: py38, aptpkg: python3.8, container: 'ubuntu:18.04' }
+            toxenv: py38
+            vars: { aptpkg: python3.8, container: 'ubuntu:18.04' }
           - os: ubuntu-20.04
-            vars: { toxenv: py38, aptpkg: python3.8 }
+            toxenv: py38
+            vars: { aptpkg: python3.8 }
           - os: ubuntu-20.04
-            vars: { toxenv: py39, aptpkg: python3.9 }
+            toxenv: py39
+            vars: { aptpkg: python3.9 }
           - os: ubuntu-22.04
-            vars: { toxenv: py310, aptpkg: python3.10 }
+            toxenv: py310
+            vars: { aptpkg: python3.10 }
           - os: ubuntu-22.04
-            vars: { toxenv: py311, aptpkg: python3.11 }
+            toxenv: py311
+            vars: { aptpkg: python3.11 }
           - os: ubuntu-22.04
-            vars: { toxenv: py312, aptpkg: python3.12, pipargs: --break-system-packages, container: 'ubuntu:24.04' }
+            toxenv: py312
+            vars: { aptpkg: python3.12, pipargs: --break-system-packages, container: 'ubuntu:24.04' }
       fail-fast: true
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.vars.container }} # github actions will ignore this when unset
@@ -49,8 +58,8 @@ jobs:
         shell: bash
       - name: Run unit tests ()
         run: |
-          echo "Environment" ${{ matrix.vars.toxenv }}
-          tox -e "${{ matrix.vars.toxenv }}"
+          echo "Environment" ${{ matrix.toxenv }}
+          tox -e "${{ matrix.toxenv }}"
   Test-Snap:
     runs-on: ubuntu-20.04
     steps:
