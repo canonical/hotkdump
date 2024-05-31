@@ -3,8 +3,7 @@
 # Copyright 2023 Canonical Limited.
 # SPDX-License-Identifier: GPL-3.0
 
-"""
-`hotkdump` exception types.
+"""`hotkdump` exception types.
 """
 
 import logging
