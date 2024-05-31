@@ -56,10 +56,15 @@ jobs:
           $SUDO_CMD apt -y install ${{ matrix.vars.aptpkg }}
           pip3 install tox ${{ matrix.vars.pipargs }}
         shell: bash
-      - name: Run unit tests ()
+      - name: Run unit tests
         run: |
           echo "Environment" ${{ matrix.toxenv }}
           tox -e "${{ matrix.toxenv }}"
+
+      - name: Run pylint
+        if: matrix.toxenv== 'py312'
+        run: |
+          tox -e pylint
   Test-Snap:
     runs-on: ubuntu-20.04
     steps:

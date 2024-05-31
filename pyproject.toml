@@ -8,6 +8,7 @@ readme = "README.md"
 requires-python = ">=3.6"
 license = { file = "LICENSE" }
 keywords = ["crash", "debugging", "kdump"]
+dependencies = [ "dataclasses;python_version<'3.7'"]
 classifiers = [
   # How mature is this project? Common values are
   #   3 - Alpha
@@ -35,6 +36,7 @@ classifiers = [
 testing = [
   "pytest>=7",
   "pytest-sugar",
+  "pylint",
   # The below are ubuntu-dev-tools's dependencies but unfortunately
   # the requirements.txt file is not referred in setup.py so we have
   # to list them here
@@ -55,7 +57,7 @@ testing = [
 "Bug Reports" = "https://github.com/canonical/hotkdump/issues"
 
 [project.scripts] # Optional
-hotkdump = "hotkdump.core.hotkdump_impl:main"
+hotkdump = "hotkdump.main:main"
 
 [build-system]
 # These are the assumed default build requirements from pip:
@@ -63,6 +65,102 @@ hotkdump = "hotkdump.core.hotkdump_impl:main"
 requires = ["setuptools>=43.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
-
 [tool.setuptools]
 packages = ["hotkdump", "hotkdump.core"]
+
+#########################################
+# Pylint configuration
+#########################################
+[tool.pylint.format]
+max-line-length = 120
+
+# Regexp for a line that is allowed to be longer than the limit.
+ignore-long-lines='^\s*(# )?<?https?://\S+>?$'
+
+#----------------------------------------
+[tool.pylint.BASIC]
+# Naming style matching correct argument names.
+argument-naming-style = 'snake_case'
+# Naming style matching correct constant names.
+const-naming-style = 'UPPER_CASE'
+#----------------------------------------
+[tool.pylint.MASTER]
+#py-version=3.6
+# Specify a score threshold to be exceeded before program exits with error.
+fail-under = '10.0'
+# Add files or directories to the blacklist. They should be base names, not
+# paths.
+ignore = '.git'
+# Add files or directories matching the regex patterns to the blacklist. The
+# regex matches against base names, not paths.
+ignore-patterns = ''
+# Use multiple processes to speed up Pylint. Specifying 0 will auto-detect the
+# number of processors available to use.
+jobs = 0
+# Control the amount of potential inferred values when inferring a single
+# object. This can help the performance when dealing with large functions or
+# complex, nested conditions.
+limit-inference-results = 100
+# Pickle collected data for later comparisons.
+persistent = 'yes'
+# When enabled, pylint would attempt to guess common misconfiguration and emit
+# user-friendly hints instead of false-positive error messages.
+suggestion-mode = 'yes'
+# Allow loading of arbitrary C extensions. Extensions are imported into the
+# active Python interpreter and may run arbitrary code.
+unsafe-load-any-extension = 'no'
+load-plugins= '''pylint.extensions.redefined_variable_type,
+    pylint.extensions.for_any_all,
+    pylint.extensions.overlapping_exceptions,
+    pylint.extensions.dict_init_mutate,
+    pylint.extensions.comparison_placement,
+    pylint.extensions.set_membership,
+    pylint.extensions.mccabe,
+    pylint.extensions.check_elif,
+    pylint.extensions.empty_comment,
+    pylint.extensions.confusing_elif,
+    pylint.extensions.eq_without_hash,
+    pylint.extensions.dunder,
+    pylint.extensions.consider_refactoring_into_while_condition,
+    pylint.extensions.code_style,
+    pylint.extensions.docparams,
+    pylint.extensions.consider_ternary_expression,
+    pylint.extensions.typing,
+    pylint.extensions.no_self_use,
+    pylint.extensions.docstyle,
+    pylint.extensions.private_import,
+    pylint.extensions.magic_value,
+    pylint.extensions.bad_builtin,
+'''
+# py3.6 does not support assignment expr.
+disable = '''consider-using-assignment-expr
+'''
+#----------------------------------------
+[tool.pylint.REPORTS]
+# Set the output format. Available formats are text, parseable, colorized, json
+# and msvs (visual studio). You can also give a reporter class, e.g.
+# mypackage.mymodule.MyReporterClass.
+output-format = 'colorized'
+# Tells whether to display a full report or only the messages.
+reports = 'no'
+# Activate the evaluation score.
+score = 'yes'
+#----------------------------------------
+[tool.pylint.LOGGING]
+# The type of string formatting that logging methods do. `old` means using %
+# formatting, `new` is for `{}` formatting.
+logging-format-style = 'old'
+# Logging modules to check that the string format arguments are in logging
+# function parameter format.
+logging-modules = 'logging'
+[tool.pylint.MISCELLANEOUS]
+#----------------------------------------
+# List of note tags to take in consideration, separated by a comma.
+notes = '''FIXME,
+      XXX,
+      TODO
+'''
+[tool.pylint.VARIABLES]
+# List of names allowed to shadow builtins
+allowed-redefined-builtins=''
+#########################################

@@ -3,19 +3,20 @@
 # Copyright 2023 Canonical Limited.
 # SPDX-License-Identifier: GPL-3.0
 
-"""
-`kdump` file header parser type impl.
+"""`kdump` file header parser type impl.
 """
 
 import os
 import logging
 from hotkdump.core.exceptions import NotAKernelCrashDumpException
 
-class kdump_file_header(object):
+
+class KdumpFileHeader():
     """Helper class for reading kdump file
     headers
     """
 
+    # pylint: disable=too-many-instance-attributes
     def __init__(self, kdump_file_path) -> None:
         """Parse kdump file header and expose
         them as member variables
@@ -31,11 +32,9 @@ class kdump_file_header(object):
 
             # Let's be more forgiving about locating
             # the KDUMP signature:
-            bytes = fd.read(1024 * 8)
+            blob = fd.read(1024 * 8)
             expected_magic = b'KDUMP   '
-
-            offset = bytes.find(expected_magic)
-
+            offset = blob.find(expected_magic)
             if offset == -1:
                 raise NotAKernelCrashDumpException(
                     f"{kdump_file_path} is not a kernel crash dump file")
@@ -51,8 +50,8 @@ class kdump_file_header(object):
             self.version = self.readcstr(fd)
             self.machine = self.readcstr(fd)
             self.domain = self.readcstr(fd)
-            self.normalized_version = self.version.split("-")[0].lstrip("#")
-            logging.debug(f"kdump_hdr: {str(self)}")
+            self.normalized_version = self.version.split("-", maxsplit=1)[0].lstrip("#")
+            logging.debug("kdump_hdr: %s", str(self))
 
 
     @staticmethod
@@ -62,8 +61,11 @@ class kdump_file_header(object):
         Args:
             f(file): File to seek
         """
+
+        char_nul = b'\x00'
+
         pos = f.tell()
-        while f.read(1) == b'\x00':
+        while f.read(1) == char_nul:
             pos = f.tell()
         f.seek(pos)
 
@@ -80,19 +82,20 @@ class kdump_file_header(object):
             str: The read string
         """
         buf = str()
+
         while True:
             b = f.read(1)
-            if (b == b'') or (b == b'\x00'):
-                kdump_file_header.seek_to_first_non_nul(f)
+            if b in {b'', b'\x00'}:
+                KdumpFileHeader.seek_to_first_non_nul(f)
                 return str(''.join(buf))
-            else:
-                buf += b.decode('ascii')
+
+            buf += b.decode('ascii')
 
     def __str__(self) -> str:
 
         return " | ".join(
             # Get all attributes, filter out the built-in ones
             # and stringify the rest in "name:value" format
-            [f" {v}:{str(getattr(self, v))}" for v in filter(
-                lambda x: not x.startswith("__") and not callable(getattr(self, x)), dir(self))]
+            [f" {v}:{str(getattr(self, v))}" for v in
+                [x for x in dir(self) if not x.startswith("___") and not callable(getattr(self,x))]]
         )

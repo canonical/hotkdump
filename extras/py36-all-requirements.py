@@ -10,5 +10,10 @@ import toml
 with open("pyproject.toml", "r") as f:
     data = toml.load(f)
 
+# Dependencies
+for line in data.get("project").get("dependencies"):
+    print(line)
+
+# Test dependencies
 for line in data.get("project").get("optional-dependencies").get("testing"):
     print(line)
