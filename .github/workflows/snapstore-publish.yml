@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - main # this will go to the `edge` channel
-      - '*'
     tags:
       - v202* # will go to the `beta` channel
 permissions:
@@ -41,19 +40,15 @@ jobs:
           # (that I'm aware of) getting the exit code when process
           # substition is used.
           hotkdump 2> >(grep "usage" || echo "fail") | grep -v "fail"
-
       - name: Publish to the `edge` channel
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN_EDGE }}
         if: github.ref == 'refs/heads/main'
         run: |
-          snapcraft whoami
-          echo "publish-edge"
-
+          snapcraft upload --release edge ./hotkdump*.snap
       - name: Publish to the `beta` channel
         env:
           SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN_BETA }}
         if: startsWith(github.event.ref, 'refs/tags/v202')
         run: |
-          snapcraft whoami
-          echo "publish-beta"
+          snapcraft upload --release beta ./hotkdump*.snap
