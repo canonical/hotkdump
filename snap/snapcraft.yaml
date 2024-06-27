@@ -10,7 +10,11 @@ description: |
 
   hotkdump has an bundled version of `crash` available inside the package, and will
   use that by default. It can also use the user-specified `crash` when needed.
-
+issues: https://github.com/canonical/hotkdump/issues
+license: GPL-3.0
+source-code: https://github.com/canonical/hotkdump
+website: https://github.com/canonical/hotkdump
+icon: extras/img/hotkdump-logo.png
 # ubuntutools uses APT python API to initialize the .deb package
 # and `apt_pkg.init()` needs these path/files to be present, so
 # we're pointing them to the right ones.

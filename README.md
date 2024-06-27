@@ -1,4 +1,13 @@
+<div align="center">
+
 # hotkdump
+
+<img src="extras/img/hotkdump-logo.png">
+
+<i>Easily open and analyze linux kernel crash dumps.</i>
+</div>
+
+****
 
 `hotkdump` is a tool for auto analysis of Linux kernel crash dump files generated with `kdump`. It can automatically download the required debug symbols for the crash dump's kernel version (currently only supported for Ubuntu).
 
@@ -84,4 +93,4 @@ Example usage:
 HOTKDUMP_LOGLEVEL=DEBUG hotkdump -d <dump-file-path>
 ```
 
-
+[hotkdump-logo]: extras/img/hotkdump-logo.png
