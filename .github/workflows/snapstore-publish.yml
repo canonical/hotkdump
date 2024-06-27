@@ -1,0 +1,59 @@
+name: Snap-Store-Publish
+on:
+  push:
+    branches:
+      - main # this will go to the `edge` channel
+      - '*'
+    tags:
+      - v202* # will go to the `beta` channel
+permissions:
+  contents: read #  to fetch code (actions/checkout)
+jobs:
+  build-snap:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Dependencies
+        run: |
+          if [[ "$EUID" -ne 0 ]]; then
+            SUDO_CMD="sudo -H"
+          else
+            SUDO_CMD=""
+          fi
+          $SUDO_CMD apt -y update
+          $SUDO_CMD apt -y install snapcraft sudo
+          $SUDO_CMD snap refresh lxd --channel=latest/stable
+      - name: Initialize LXD
+        run: |
+          sudo lxd init --auto
+          sudo usermod -aG lxd $USER
+          whoami
+          groups
+      - name: Build the snap
+        run: |
+          sudo -s -u ${USER} bash -c 'whoami && groups && snapcraft'
+      - name: Install the snap
+        run: |
+          sudo snap install ./hotkdump*.snap --dangerous
+      - name: Test the hotkdump command
+        run: |
+          # (mkg): We had to do this because there's no good way
+          # (that I'm aware of) getting the exit code when process
+          # substition is used.
+          hotkdump 2> >(grep "usage" || echo "fail") | grep -v "fail"
+
+      - name: Publish to the `edge` channel
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN_EDGE }}
+        if: github.ref == 'refs/heads/main'
+        run: |
+          snapcraft whoami
+          echo "publish-edge"
+
+      - name: Publish to the `beta` channel
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_TOKEN_BETA }}
+        if: startsWith(github.event.ref, 'refs/tags/v202')
+        run: |
+          snapcraft whoami
+          echo "publish-beta"
