@@ -85,11 +85,11 @@ class HotkdumpTest(TestCase):
         """
         params = HotkdumpParameters(dump_file_path="empty")
         uut = Hotkdump(params)
-        uut.kdump_header.machine = "x86_64"
+        uut.kdump_file.ddhdr.utsname.machine = "x86_64"
         self.assertEqual(uut.get_architecture(), "amd64")
-        uut.kdump_header.machine = "aarch64"
+        uut.kdump_file.ddhdr.utsname.machine = "aarch64"
         self.assertEqual(uut.get_architecture(), "arm64")
-        uut.kdump_header.machine = "invalid"
+        uut.kdump_file.ddhdr.utsname.machine = "invalid"
         self.assertRaises(NotImplementedError, uut.get_architecture)
 
     @mock.patch('builtins.open', mock_file(bytes=MOCK_HDR, name="name"))
@@ -99,14 +99,14 @@ class HotkdumpTest(TestCase):
         """
         params= HotkdumpParameters(dump_file_path="empty")
         uut = Hotkdump(params)
-        self.assertEqual(uut.kdump_header.kdump_version, 67305985)
-        self.assertEqual(uut.kdump_header.domain, "domain")
-        self.assertEqual(uut.kdump_header.machine, "machine")
-        self.assertEqual(uut.kdump_header.node, "node")
-        self.assertEqual(uut.kdump_header.release, "release")
-        self.assertEqual(uut.kdump_header.system, "sys")
-        self.assertEqual(uut.kdump_header.version, "#version-443")
-        self.assertEqual(uut.kdump_header.normalized_version, "version")
+        self.assertEqual(uut.kdump_file.ddhdr.header_version, 67305985)
+        self.assertEqual(uut.kdump_file.ddhdr.utsname.domain, "domain")
+        self.assertEqual(uut.kdump_file.ddhdr.utsname.machine, "machine")
+        self.assertEqual(uut.kdump_file.ddhdr.utsname.node, "node")
+        self.assertEqual(uut.kdump_file.ddhdr.utsname.release, "release")
+        self.assertEqual(uut.kdump_file.ddhdr.utsname.system, "sys")
+        self.assertEqual(uut.kdump_file.ddhdr.utsname.version, "#version-443")
+        self.assertEqual(uut.kdump_file.ddhdr.utsname.normalized_version, "version")
 
     def test_find_crash_executable_symlink_exists(self):
         """Verify that the hotkdump uses the crash symlink on the root
@@ -322,10 +322,10 @@ class HotkdumpTest(TestCase):
         # mock_pull.return_value.pull
         params= HotkdumpParameters(dump_file_path="empty")
         uut = Hotkdump(params)
-        uut.kdump_header.release = "5.15.0-1030-gcp"
-        uut.kdump_header.machine = "x86_64"
-        uut.kdump_header.version = "#37-Ubuntu SMP Tue Feb 14 19:37:08 UTC 2023"
-        uut.kdump_header.normalized_version = "37"
+        uut.kdump_file.ddhdr.utsname.release = "5.15.0-1030-gcp"
+        uut.kdump_file.ddhdr.utsname.machine = "x86_64"
+        uut.kdump_file.ddhdr.utsname.version = "#37-Ubuntu SMP Tue Feb 14 19:37:08 UTC 2023"
+        uut.kdump_file.ddhdr.utsname.normalized_version = "37"
         
 
         # Test downloading a new ddeb file
