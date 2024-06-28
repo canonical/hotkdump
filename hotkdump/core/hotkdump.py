@@ -26,7 +26,7 @@ except ModuleNotFoundError as exc:
                               "Install it via `sudo apt install ubuntu-dev-tools`") from exc
 
 from hotkdump.core.exceptions import ExceptionWithLog
-from hotkdump.core.kdump_file_header import KdumpFileHeader
+from hotkdump.core.kdumpfile import KdumpFile
 from hotkdump.core.folder_retention_manager import(
     FolderRetentionManager,
     FolderRetentionManagerSettings
@@ -90,9 +90,9 @@ class Hotkdump:
         with open(self.params.output_file_path, "w", encoding="utf-8") as outfile:
             outfile.write(f"{tstamp_now}: processing {vmcore_filename} (SF# {self.params.sf_case_number})\n")
 
-        self.kdump_header = KdumpFileHeader(self.params.dump_file_path)
+        self.kdump_file = KdumpFile(self.params.dump_file_path)
 
-        logging.info("kernel version: %s", self.kdump_header.release)
+        logging.info("kernel version: %s", self.kdump_file.ddhdr.utsname.release)
         # pylint: disable=consider-using-with
         self.temp_working_dir = tempfile.TemporaryDirectory()
         logging.debug(
@@ -115,12 +115,12 @@ class Hotkdump:
 
         arch_mappings = {"x86_64": "amd64", "aarch64": "arm64"}
 
-        if self.kdump_header.machine in arch_mappings:
-            return arch_mappings[self.kdump_header.machine]
+        if self.kdump_file.ddhdr.utsname.machine in arch_mappings:
+            return arch_mappings[self.kdump_file.ddhdr.utsname.machine]
 
         # FIXME(mkg): Add other architectures as well
         raise NotImplementedError(
-            f"Machine architecture {self.kdump_header.machine} not recognized!")
+            f"Machine architecture {self.kdump_file.ddhdr.utsname.machine} not recognized!")
 
     def run(self, interactive=False):
         """Run hotkdump main routine."""
@@ -337,9 +337,9 @@ class Hotkdump:
         # linux-image-unsigned-5.4.0-135-generic-dbgsym_5.4.0-135.152_amd64.ddeb
         ddeb_name_format = "linux-image-unsigned-{}-dbgsym_{}.{}_{}.ddeb"
         expected_ddeb_path = ddeb_name_format.format(
-            self.kdump_header.release,
-            self.strip_release_variant_tags(self.kdump_header.release),
-            self.kdump_header.normalized_version,
+            self.kdump_file.ddhdr.utsname.release,
+            self.strip_release_variant_tags(self.kdump_file.ddhdr.utsname.release),
+            self.kdump_file.ddhdr.utsname.normalized_version,
             self.get_architecture()
         )
 
@@ -355,15 +355,16 @@ class Hotkdump:
                 return expected_ddeb_path
 
             logging.info(
-                "Downloading `vmlinux` image for kernel version %s, please be patient...", self.kdump_header.release)
+                "Downloading `vmlinux` image for kernel version %s, please be patient...",
+                self.kdump_file.ddhdr.utsname.release)
 
             # (mkg): To force pull-lp-ddebs to use launchpadlibrarian.net for download
             # pass an empty mirror list env variable to the hotkdump, e.g.:
             # UBUNTUTOOLS_UBUNTU_DDEBS_MIRROR= python3 hotkdump.py -c 123 -d dump.dump
             pull_args = ["--distro", "ubuntu", "--arch", self.get_architecture(), "--pull", "ddebs",
-                         f"linux-image-unsigned-{self.kdump_header.release}",
-                         f"{self.strip_release_variant_tags(self.kdump_header.release)}"
-                         f".{self.kdump_header.normalized_version}"]
+                         f"linux-image-unsigned-{self.kdump_file.ddhdr.utsname.release}",
+                         f"{self.strip_release_variant_tags(self.kdump_file.ddhdr.utsname.release)}"
+                         f".{self.kdump_file.ddhdr.utsname.normalized_version}"]
             logging.info("Invoking PullPkg().pull with %s", str(pull_args))
 
             PullPkg().pull(pull_args)
@@ -393,7 +394,7 @@ class Hotkdump:
                 f"failed to extract {ddeb_file}: {result.stderr.readlines()}")
 
         return self.temp_working_dir.name + \
-            f"/ddeb-root/usr/lib/debug/boot/vmlinux-{self.kdump_header.release}"
+            f"/ddeb-root/usr/lib/debug/boot/vmlinux-{self.kdump_file.ddhdr.utsname.release}"
 
     def summarize_vmcore_file(self, vmlinux_path:str):
         """Print a summary of the vmcore file to the output file

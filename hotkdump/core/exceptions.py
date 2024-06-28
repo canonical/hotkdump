@@ -16,5 +16,5 @@ class ExceptionWithLog(Exception):
         super().__init__(msg)
 
 class NotAKernelCrashDumpException(ExceptionWithLog):
-    """Exception thrown when a file given to kdump_file_header
-    is not recognized as a crash dump file."""
+    """Exception thrown when the given file is not
+    recognized as a crash dump file."""
