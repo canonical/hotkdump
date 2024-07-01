@@ -20,6 +20,8 @@ from dataclasses import dataclass, field
 
 try:
     from ubuntutools.pullpkg import PullPkg
+    # pylint: disable-next=import-private-name
+    from ubuntutools.misc import _StderrProgressBar
     from ubuntutools import getLogger as ubuntutools_GetLogger
 except ModuleNotFoundError as exc:
     raise ModuleNotFoundError("\n\n`hotkdump` needs ubuntu.pullpkg to function.\n"
@@ -27,6 +29,7 @@ except ModuleNotFoundError as exc:
 
 from hotkdump.core.exceptions import ExceptionWithLog
 from hotkdump.core.kdumpfile import KdumpFile
+from hotkdump.core.utils import pretty_size
 from hotkdump.core.folder_retention_manager import(
     FolderRetentionManager,
     FolderRetentionManagerSettings
@@ -37,12 +40,12 @@ from hotkdump.core.utils import (
 )
 
 
-
 @dataclass()
+# pylint: disable-next=too-many-instance-attributes
 class HotkdumpParameters:
     """Parameters for hotkdump."""
     dump_file_path: str
-    sf_case_number: str = None
+    internal_case_number: str = None
     interactive: bool = False
     output_file_path: str = mktemppath("hotkdump.out")
     log_file_path: str = mktemppath("hotkdump.log")
@@ -55,9 +58,18 @@ class HotkdumpParameters:
             max_age_secs = 86400 * 15, # 15 days
             max_count = 5
         ))
+    print_vmcoreinfo_fields: list = None
+    no_debuginfod: bool = False
+    no_pullpkg: bool = False
 
     def validate_sanity(self):
         """Check whether option values are not contradicting and sane."""
+
+        if all([self.no_debuginfod, self.no_pullpkg]):
+            raise ExceptionWithLog(
+                "At least one download method must be enabled (debuginfod, pullpkg)!"
+            )
+
         self.ddeb_retention_settings.validate_sanity()
 
 class Hotkdump:
@@ -68,11 +80,7 @@ class Hotkdump:
         """initialize a new hotkdump instance
 
         Args:
-            case_number (str): Salesforce case number
-            vmcore_file (str): kdump file path
-            output_file_path (str, optional): hotkdump output file path. Defaults to default_output_file.
-            log_file_path (str, optional): hotkdump log output path. Defaults to default_log_file.
-            ddebs_path (str, optional): the path to save the downloaded ddeb files. Defaults to default_ddebs_path.
+            parameters: HotkdumpParameters
 
         Raises:
             ExceptionWithLog: when ddeb retention high watermark is less than low watermark
@@ -80,15 +88,17 @@ class Hotkdump:
         self.params = parameters
         self.crash_executable = self.find_crash_executable()
         self.params.validate_sanity()
+        self.debuginfod_find_progress = None
         self.initialize_logging()
 
+        logging.debug("%s", self.params)
         logging.info("reading vmcore file %s", self.params.dump_file_path)
 
         self.touch_file(self.params.output_file_path)
         tstamp_now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         vmcore_filename = self.params.dump_file_path.rsplit('/', 1)[-1]
         with open(self.params.output_file_path, "w", encoding="utf-8") as outfile:
-            outfile.write(f"{tstamp_now}: processing {vmcore_filename} (SF# {self.params.sf_case_number})\n")
+            outfile.write(f"{tstamp_now}: processing {vmcore_filename} (CASE# {self.params.internal_case_number})\n")
 
         self.kdump_file = KdumpFile(self.params.dump_file_path)
 
@@ -122,24 +132,10 @@ class Hotkdump:
         raise NotImplementedError(
             f"Machine architecture {self.kdump_file.ddhdr.utsname.machine} not recognized!")
 
-    def run(self, interactive=False):
-        """Run hotkdump main routine."""
-        try:
-            vmlinux_ddeb = self.maybe_download_vmlinux_ddeb()
-            if vmlinux_ddeb == "":
-                logging.error("vmlinux ddeb dowload failed.")
-                return
-
-            extracted_vmlinux = self.extract_vmlinux_ddeb(vmlinux_ddeb)
-
-            if interactive:
-                self.launch_crash(extracted_vmlinux)
-            else:
-                self.summarize_vmcore_file(extracted_vmlinux)
-
-        finally:
-            self.post_run()
-
+    @staticmethod
+    def find_debuginfod_find_executable():
+        """Path to the debuginfod-find executable."""
+        return shutil.which("debuginfod-find")
 
     @staticmethod
     def find_crash_executable():
@@ -287,7 +283,6 @@ class Hotkdump:
             p.wait()
         return p
 
-
     @staticmethod
     def strip_release_variant_tags(value):
         """Strip a version string from its' release variant tags,
@@ -326,7 +321,83 @@ class Hotkdump:
 
         return value
 
-    def maybe_download_vmlinux_ddeb(self):
+    def _digest_debuginfod_find_output(self, line):
+        download_start_match = re.match("committed to url", line)
+        http_match = re.match(r"header x-debuginfod-(\w+): (.*)", line)
+
+        if download_start_match:
+            logging.info("debuginfod-find: found, downloading...")
+
+        if http_match:
+            name, content = http_match.groups()
+
+            log_fns = {
+                "size": lambda : logging.info("debuginfod-find: vmlinux size: %s", pretty_size(int(content))),
+                "archive": lambda : logging.info("debuginfod-find: `.ddeb` file name: %s", content),
+                "file": lambda : logging.info("debuginfod-find: vmlinux file name: %s", content)
+            }
+
+            if name in log_fns:
+                log_fns[name]()
+
+        progress_match = re.match(r"Progress ([0-9]+) \/ ([0-9]+)", line)
+
+        if progress_match:
+            if not self.debuginfod_find_progress:
+                # In order to be consistent,.we're using the same
+                # progress bar that PullPkg uses.
+                self.debuginfod_find_progress = _StderrProgressBar(os.get_terminal_size(sys.stderr.fileno()).columns)
+            current, maximum =  [int(v) for v in progress_match.groups()]
+            if maximum > 0:
+                pct = int((current / maximum) * 100)
+                self.debuginfod_find_progress.update(pct, 100)
+
+
+    def maybe_download_vmlinux_via_debuginfod(self):
+        """Try downloading vmlinux image with debug information
+        using debuginfod-find."""
+        try:
+            debuginfod_find_path = self.find_debuginfod_find_executable()
+            if not debuginfod_find_path:
+                logging.debug("debuginfod-find is not present in environment.")
+                return None
+
+            build_id = self.kdump_file.vmcoreinfo.get("BUILD-ID")
+            if not build_id:
+                logging.info("cannot use debuginfod-find - BUILD-ID not found in vmcoreinfo!")
+                return None
+
+            debuginfod_find_args = f"-vvv debuginfo {build_id}"
+            logging.info("Invoking debuginfod-find with %s", str(debuginfod_find_args))
+
+            line = ""
+            # $HOME/. cache/debuginfod_client/
+            with subprocess.Popen(
+                args=f"{debuginfod_find_path} {debuginfod_find_args}",
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                universal_newlines=True,
+            ) as proc:
+                while proc.poll() is None:
+                    lo = proc.stdout.readline()
+                    if lo and not lo.isspace():
+                        line = lo.strip()
+                    self._digest_debuginfod_find_output(line)
+
+                result = proc.wait()
+
+            if result == 0:
+                # line should point to the vmcore file
+                logging.info("debuginfod-find: succeeded, vmcore path: `%s`", line)
+                return line
+
+            logging.info("debuginfod-find: download for BUILD-ID `%s` failed with `%s`", build_id, line)
+            return None
+        finally:
+            self.debuginfod_find_progress = None
+
+    def maybe_download_vmlinux_via_pullpkg(self):
         """Download debug vmlinux image .ddeb for current dump file
         via pullpkg (if not already present).
 
@@ -413,6 +484,39 @@ class Hotkdump:
             "Loading `vmcore` file %s into `crash`, please wait..", self.params.dump_file_path)
         self.exec(self.crash_executable,
                   f"{self.params.dump_file_path} {vmlinux_path}")
+
+    def run(self):
+        """Run hotkdump main routine."""
+        try:
+            if self.params.print_vmcoreinfo_fields:
+                for key in self.params.print_vmcoreinfo_fields:
+                    print(f"{key}={self.kdump_file.vmcoreinfo.get(key)}")
+                return
+
+            extracted_vmlinux = None
+
+            if not self.params.no_debuginfod:
+                extracted_vmlinux = self.maybe_download_vmlinux_via_debuginfod()
+
+            if not extracted_vmlinux and not self.params.no_pullpkg:
+                vmlinux_ddeb = self.maybe_download_vmlinux_via_pullpkg()
+                if vmlinux_ddeb == "":
+                    logging.error("vmlinux ddeb dowload failed.")
+                    return
+
+                extracted_vmlinux = self.extract_vmlinux_ddeb(vmlinux_ddeb)
+
+            if not extracted_vmlinux:
+                logging.error("vmlinux image with debug symbols not found, aborting")
+                return
+
+            if self.params.interactive:
+                self.launch_crash(extracted_vmlinux)
+            else:
+                self.summarize_vmcore_file(extracted_vmlinux)
+
+        finally:
+            self.post_run()
 
     def post_run(self):
         """Perform post-run tasks
