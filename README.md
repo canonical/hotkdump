@@ -9,21 +9,47 @@
 
 ****
 
-`hotkdump` is a tool for auto analysis of Linux kernel crash dump files generated with `kdump`. It can automatically download the required debug symbols for the crash dump's kernel version (currently only supported for Ubuntu).
+`hotkdump` is a tool for auto analysis of Linux kernel crash dump files generated with `kdump`. It can automatically download the correct Linux kernel image(vmlinux) with debug symbols for the crash dump's kernel version (currently only supported for Ubuntu).
+
+`hotkdump` has two ways of automatically retrieving Linux kernel images:
+
+- ...via debuginfod: If `debuginfod-find` is available in the environment and BUILD-ID is available in VMCOREINFO section of the crash dump
+- ...via pullpkg
+
+Both methods are enabled by default and the order of execution is: [`debuginfod`, `pullpkg`]. The methods can be disabled with `--no-debuginfod` and `--no-pullpkg` flags, respectively.
+
+`debuginfod` is bundled into `snap` version of the application by default.
 
 ## Synopsis
 
 ```bash
-hotkdump -d <dump-file> [other-options...]
+hotkdump [-d/--dump-file-path] <crash-dump-file> [other-options...]
 ```
 
 other-options:
 
-* `-c <case-number>`: Canonical Support internal case number
-* `-i` : Run in interactive mode
-* `-o <output-path>`: Output path for the analysis results. (*default*: `/tmp/hotkdump.out`)
-* `-l <log-file-path>`: Output path for log file. (*default*: `/tmp/hotkdump.log`)
-* `-p <ddebs-path>`: Path for storing `.ddeb` files. (*default*: `/tmp/hotkdump/ddebs`)
+```bash
+usage: main.py [-h] -d DUMP_FILE_PATH [-c INTERNAL_CASE_NUMBER] [-i] [-o OUTPUT_FILE_PATH] [-l LOG_FILE_PATH] [-p DDEBS_FOLDER_PATH] [--print-vmcoreinfo-fields [PRINT_VMCOREINFO_FIELDS ...]]
+               [--no-debuginfod | --no-pullpkg]
+
+options:
+  -h, --help            show this help message and exit
+  -d DUMP_FILE_PATH, --dump-file-path DUMP_FILE_PATH
+                        Path to the Linux kernel crash dump
+  -c INTERNAL_CASE_NUMBER, --internal-case-number INTERNAL_CASE_NUMBER
+                        Canonical Support internal case number (default: 0)
+  -i, --interactive     Start the `crash` in interactive mode instead of printing summary (default: False)
+  -o OUTPUT_FILE_PATH, --output-file-path OUTPUT_FILE_PATH
+                        Output file path for the summary (default: None)
+  -l LOG_FILE_PATH, --log-file-path LOG_FILE_PATH
+                        log file path (default: None)
+  -p DDEBS_FOLDER_PATH, --ddebs-folder-path DDEBS_FOLDER_PATH
+                        Path to save the downloaded .ddeb files. Will be created if the specified path is absent. (default: None)
+  --print-vmcoreinfo-fields [PRINT_VMCOREINFO_FIELDS ...]
+                        Read and print the specified VMCOREINFO fields from the given kernel crash dump, then exit.
+  --no-debuginfod       Do not use debuginfod for downloads (default: False)
+  --no-pullpkg          Do not use pullpkg for downloads (default: False)
+```
 
 ## Running
 
@@ -92,5 +118,12 @@ Example usage:
 ```bash
 HOTKDUMP_LOGLEVEL=DEBUG hotkdump -d <dump-file-path>
 ```
+
+### Snap-related pecularities
+
+Hotkdump's `snap` is strictly confined, so all data is confined to snap's own directories, such as:
+
+- `/tmp` --> `/tmp/snap-private-tmp/snap.hotkdump/tmp`
+- `$HOME` --> `/home/$USER/snap/hotkdump/current/`
 
 [hotkdump-logo]: extras/img/hotkdump-logo.png

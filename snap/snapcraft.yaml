@@ -61,3 +61,4 @@ parts:
       # Needed for hotkdump
       - ubuntu-dev-tools
       - dpkg # needed by ubuntu-dev-tools
+      - debuginfod

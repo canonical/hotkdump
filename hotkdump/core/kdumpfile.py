@@ -216,6 +216,9 @@ class VMCoreInfo:
         """Retrieve a VMCoreInfo key's value."""
         return self.data[key]
 
+    def __repr__(self):
+        return str(self.data)
+
 
 class KdumpFile:
     """Helper class for parsing headers from kernel crash

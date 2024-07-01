@@ -55,9 +55,9 @@ class HotkdumpTest(TestCase):
         that the class variables are initialized
         as expected.
         """
-        params = HotkdumpParameters(sf_case_number="1", dump_file_path="vmcore")
+        params = HotkdumpParameters(internal_case_number="1", dump_file_path="vmcore")
         uut = Hotkdump(params)
-        self.assertEqual(uut.params.sf_case_number, "1")
+        self.assertEqual(uut.params.internal_case_number, "1")
         self.assertEqual(uut.params.dump_file_path, "vmcore")
 
     def test_construct(self):
@@ -67,11 +67,11 @@ class HotkdumpTest(TestCase):
         """
 
         params = HotkdumpParameters(
-            sf_case_number="1", dump_file_path="vmcore",
+            internal_case_number="1", dump_file_path="vmcore",
             output_file_path="opf", log_file_path="log",
             ddebs_folder_path="ddebs",interactive=True)
         uut = Hotkdump(params)
-        self.assertEqual(uut.params.sf_case_number, "1")
+        self.assertEqual(uut.params.internal_case_number, "1")
         self.assertEqual(uut.params.dump_file_path, "vmcore")
         self.assertEqual(uut.params.output_file_path, "opf")
         self.assertEqual(uut.params.log_file_path, "log")
@@ -305,7 +305,7 @@ class HotkdumpTest(TestCase):
     @mock.patch("os.utime")
     @mock.patch("hotkdump.core.hotkdump.PullPkg")
     @mock.patch("hotkdump.core.hotkdump.switch_cwd")
-    def test_maybe_download_vmlinux_ddeb(self,mock_switch_cwd, mock_pullpkg, mock_utime ):
+    def test_maybe_download_vmlinux_ddeb(self,mock_switch_cwd, mock_pullpkg, mock_utime):
         """Verify that the hotkdump:
         - calls the PullPkg when the ddeb is absent
         - does not call the PullPkg when the ddeb is present
@@ -334,7 +334,7 @@ class HotkdumpTest(TestCase):
 
         with mock.patch("os.path.exists") as mock_exists:
             mock_exists.side_effect = [False, True]
-            result = uut.maybe_download_vmlinux_ddeb()
+            result = uut.maybe_download_vmlinux_via_pullpkg()
 
             mock_exists.assert_called()
 
@@ -353,7 +353,7 @@ class HotkdumpTest(TestCase):
             with mock.patch("time.time") as mock_time:
                 mock_time.return_value = 1234567890.0
 
-                result = uut.maybe_download_vmlinux_ddeb()
+                result = uut.maybe_download_vmlinux_via_pullpkg()
 
                 # Assert that pullpkg was not invoked
                 mock_pull.assert_not_called()
@@ -370,7 +370,7 @@ class HotkdumpTest(TestCase):
         with mock.patch("os.path.exists") as mock_exists:
             mock_exists.return_value = False
             with self.assertRaises(ExceptionWithLog):
-                uut.maybe_download_vmlinux_ddeb()
+                uut.maybe_download_vmlinux_via_pullpkg()
 
     def test_post_run_ddeb_count_policy(self):
         """Verify that the hotkdump executes the file
