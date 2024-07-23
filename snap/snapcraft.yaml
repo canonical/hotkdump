@@ -40,7 +40,7 @@ apps:
       - network-bind
 parts:
   crash:
-    source: https://github.com/crash-utility/crash/archive/refs/tags/8.0.3.tar.gz
+    source: https://github.com/crash-utility/crash/archive/refs/tags/8.0.5.tar.gz
     plugin: make
     build-packages:
       # The list of packages needed to build `crash`
