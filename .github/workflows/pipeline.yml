@@ -4,6 +4,7 @@ on:
     branches: [main]
 permissions:
   contents: read #  to fetch code (actions/checkout)
+
 jobs:
   Test:
     strategy:
@@ -36,11 +37,15 @@ jobs:
           - os: ubuntu-22.04
             toxenv: py311
             vars: { aptpkg: python3.11 }
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             toxenv: py312
-            vars: { aptpkg: python3.12, pipargs: --break-system-packages, container: 'ubuntu:24.04' }
+            vars: { aptpkg: python3.12, pipargs: --break-system-packages }
       fail-fast: true
     runs-on: ${{ matrix.os }}
+    env:
+      # (mkg): Github runners have switched to node20 which depends on GLIBC2.27.
+      # Bionic does not have that, so we have to use this workaround until it lasts.
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION:  ${{ matrix.vars.container == 'ubuntu:18.04' }}
     container: ${{ matrix.vars.container }} # github actions will ignore this when unset
     steps:
       - uses: actions/checkout@v3
