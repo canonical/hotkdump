@@ -2,7 +2,7 @@
 
 [project]
 name = "hotkdump"
-version = "2024.5.2"
+version = "2024.7.1"
 description = "Linux kernel crashdump analysis tool"
 readme = "README.md"
 requires-python = ">=3.6"
