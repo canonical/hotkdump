@@ -473,7 +473,7 @@ class Hotkdump:
         logging.info("Loading `vmcore` file %s into `crash`, please wait..", self.params.dump_file_path)
 
         self.exec(self.crash_executable,
-                  f"-i {self.commands_file_path} -s {self.params.dump_file_path} {vmlinux_path}")
+                  f"-x -i {self.commands_file_path} -s {self.params.dump_file_path} {vmlinux_path}")
         logging.info("See %s for logs, %s for outputs", self.params.log_file_path, self.params.output_file_path)
 
     def launch_crash(self, vmlinux_path:str):
@@ -483,7 +483,7 @@ class Hotkdump:
         logging.info(
             "Loading `vmcore` file %s into `crash`, please wait..", self.params.dump_file_path)
         self.exec(self.crash_executable,
-                  f"{self.params.dump_file_path} {vmlinux_path}")
+                  f"-x {self.params.dump_file_path} {vmlinux_path}")
 
     def run(self):
         """Run hotkdump main routine."""

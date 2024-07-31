@@ -34,6 +34,8 @@ apps:
     command: bin/hotkdump
     environment:
       PYTHONPATH: $SNAP/usr/lib/python3/site-packages:$SNAP/usr/lib/python3/dist-packages:$PYTHONPATH
+      # Set the auto extension load path for crash
+      CRASH_EXTENSIONS: $SNAP/usr/lib64/crash/extensions/
     plugs:
       - home
       - network
@@ -55,6 +57,7 @@ parts:
   hotkdump:
     plugin: python
     source: .
+    after: [pykdump]
     build-packages:
       - python3-pip
     stage-packages:
@@ -62,3 +65,42 @@ parts:
       - ubuntu-dev-tools
       - dpkg # needed by ubuntu-dev-tools
       - debuginfod
+  pykdump:
+    plugin: make
+    after: [crash]
+    source: git://git.code.sf.net/p/pykdump/code
+    override-build: |
+      # Adapted from official instructions: https://pykdump.readthedocs.io/en/latest/install/build-steps.html 
+      # Build python from source. We're using Python 3.8 right now because
+      # Python 3.10 isn't working for pykdump.
+      wget https://www.python.org/ftp/python/3.8.19/Python-3.8.19.tgz
+      tar -xvzf Python-3.8.19.tgz
+      cd $CRAFT_PART_BUILD/Python-3.8.19
+      # Configure Python to produce position-independent static library
+      ./configure CFLAGS=-fPIC --disable-shared
+      # Fetch the modified setup.local file from pykdump repository, and override the existing one for Python
+      wget https://sourceforge.net/p/pykdump/code/ci/master/tree/Extension/Setup.local-3.8?format=raw -O Modules/Setup.local
+      # Compile Python
+      make -j32
+      # Go into pykdump/Extension folder
+      cd $CRAFT_PART_BUILD/Extension
+      # Point to the python and crash folders
+      ./configure -p $CRAFT_PART_BUILD/Python-3.8.19 -c $SNAPCRAFT_STAGE/../parts/crash/build
+      # Build the pykdump crash extension
+      make
+      # Create target directory for install
+      mkdir -p $CRAFT_PART_INSTALL/usr/lib64/crash/extensions
+      # Modify the make install target. By default, the target path is ~/.crash.d/
+      sed -i 's|$$HOME/\.crash\.d|'$CRAFT_PART_INSTALL'/usr/lib64/crash/extensions|g' Makefile
+      make install
+    # We only need mpykdump.so from all of this.
+    stage:
+      - usr/lib64/crash/extensions/mpykdump.so
+    prime:
+      - usr/lib64/crash/extensions/mpykdump.so
+    build-packages:
+      - build-essential
+      - libffi-dev
+      - libreadline-dev
+      - zip
+      - texinfo
