@@ -29,8 +29,8 @@ hotkdump [-d/--dump-file-path] <crash-dump-file> [other-options...]
 other-options:
 
 ```bash
-usage: main.py [-h] -d DUMP_FILE_PATH [-c INTERNAL_CASE_NUMBER] [-i] [-o OUTPUT_FILE_PATH] [-l LOG_FILE_PATH] [-p DDEBS_FOLDER_PATH] [--print-vmcoreinfo-fields [PRINT_VMCOREINFO_FIELDS ...]]
-               [--no-debuginfod | --no-pullpkg]
+usage: hotkdump [-h] -d DUMP_FILE_PATH [-c INTERNAL_CASE_NUMBER] [-i] [-o OUTPUT_FILE_PATH] [-l LOG_FILE_PATH] [-p DDEBS_FOLDER_PATH]
+                [--print-vmcoreinfo-fields [PRINT_VMCOREINFO_FIELDS ...]] [--debug-file DEBUG_FILE] [--no-debuginfod | --no-pullpkg]
 
 options:
   -h, --help            show this help message and exit
@@ -47,6 +47,8 @@ options:
                         Path to save the downloaded .ddeb files. Will be created if the specified path is absent. (default: None)
   --print-vmcoreinfo-fields [PRINT_VMCOREINFO_FIELDS ...]
                         Read and print the specified VMCOREINFO fields from the given kernel crash dump, then exit.
+  --debug-file DEBUG_FILE
+                        Specify the debug file to use. Only ddebs and vmlinux files are supported. (default: None)
   --no-debuginfod       Do not use debuginfod for downloads (default: False)
   --no-pullpkg          Do not use pullpkg for downloads (default: False)
 ```
