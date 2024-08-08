@@ -69,13 +69,14 @@ class HotkdumpParameters:
         )
     )
     print_vmcoreinfo_fields: list = None
+    debug_file: str = None
     no_debuginfod: bool = False
     no_pullpkg: bool = False
 
     def validate_sanity(self):
         """Check whether option values are not contradicting and sane."""
 
-        if all([self.no_debuginfod, self.no_pullpkg]):
+        if all([self.no_debuginfod, self.no_pullpkg, not self.debug_file]):
             raise ExceptionWithLog(
                 "At least one download method must be enabled (debuginfod, pullpkg)!"
             )
@@ -341,48 +342,51 @@ class Hotkdump:
         """Try downloading vmlinux image with debug information
         using debuginfod-find."""
         try:
-            debuginfod_find_path = self.find_debuginfod_find_executable()
-            if not debuginfod_find_path:
-                logging.debug("debuginfod-find is not present in environment.")
-                return None
+            if not self.params.no_debuginfod:
+                debuginfod_find_path = self.find_debuginfod_find_executable()
+                if not debuginfod_find_path:
+                    logging.debug("debuginfod-find is not present in environment.")
+                    return None
 
-            build_id = self.kdump_file.vmcoreinfo.get("BUILD-ID")
-            if not build_id:
+                build_id = self.kdump_file.vmcoreinfo.get("BUILD-ID")
+                if not build_id:
+                    logging.info(
+                        "cannot use debuginfod-find - BUILD-ID not found in vmcoreinfo!"
+                    )
+                    return None
+
+                debuginfod_find_args = f"-vvv debuginfo {build_id}"
                 logging.info(
-                    "cannot use debuginfod-find - BUILD-ID not found in vmcoreinfo!"
+                    "Invoking debuginfod-find with %s", str(debuginfod_find_args)
                 )
-                return None
 
-            debuginfod_find_args = f"-vvv debuginfo {build_id}"
-            logging.info("Invoking debuginfod-find with %s", str(debuginfod_find_args))
+                line = ""
+                # $HOME/. cache/debuginfod_client/
+                with subprocess.Popen(
+                    args=f"{debuginfod_find_path} {debuginfod_find_args}",
+                    shell=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    universal_newlines=True,
+                ) as proc:
+                    while proc.poll() is None:
+                        lo = proc.stdout.readline()
+                        if lo and not lo.isspace():
+                            line = lo.strip()
+                        self._digest_debuginfod_find_output(line)
 
-            line = ""
-            # $HOME/. cache/debuginfod_client/
-            with subprocess.Popen(
-                args=f"{debuginfod_find_path} {debuginfod_find_args}",
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                universal_newlines=True,
-            ) as proc:
-                while proc.poll() is None:
-                    lo = proc.stdout.readline()
-                    if lo and not lo.isspace():
-                        line = lo.strip()
-                    self._digest_debuginfod_find_output(line)
+                    result = proc.wait()
 
-                result = proc.wait()
+                if result == 0:
+                    # line should point to the vmcore file
+                    logging.info("debuginfod-find: succeeded, vmcore path: `%s`", line)
+                    return line
 
-            if result == 0:
-                # line should point to the vmcore file
-                logging.info("debuginfod-find: succeeded, vmcore path: `%s`", line)
-                return line
-
-            logging.info(
-                "debuginfod-find: download for BUILD-ID `%s` failed with `%s`",
-                build_id,
-                line,
-            )
+                logging.info(
+                    "debuginfod-find: download for BUILD-ID `%s` failed with `%s`",
+                    build_id,
+                    line,
+                )
             return None
         finally:
             self.debuginfod_find_progress = None
@@ -394,54 +398,63 @@ class Hotkdump:
         Returns:
             str: The path to the .ddeb file
         """
-        # Parameters are: release, release{without -generic}, normalized version, arch
-        # linux-image-unsigned-5.4.0-135-generic-dbgsym_5.4.0-135.152_amd64.ddeb
-        ddeb_name_format = "linux-image-unsigned-{}-dbgsym_{}.{}_{}.ddeb"
-        expected_ddeb_path = ddeb_name_format.format(
-            self.kdump_file.ddhdr.utsname.release,
-            self.strip_release_variant_tags(self.kdump_file.ddhdr.utsname.release),
-            self.kdump_file.ddhdr.utsname.normalized_version,
-            self.get_architecture(),
-        )
-
-        with switch_cwd(self.params.ddebs_folder_path):
-            # Check if we already have the .ddeb
-            if os.path.exists(expected_ddeb_path):
-                # Already exists, do not download again
-                # TODO(mkg): Verify SHA checksum?
-                logging.info(
-                    "The .ddeb file %s already exists, re-using it", expected_ddeb_path
-                )
-                # Ensure that the file's last access time is updated
-                os.utime(expected_ddeb_path, (time.time(), time.time()))
-                return expected_ddeb_path
-
-            logging.info(
-                "Downloading `vmlinux` image for kernel version %s, please be patient...",
+        if not self.params.no_pullpkg:
+            # Parameters are: release, release{without -generic}, normalized version, arch
+            # linux-image-unsigned-5.4.0-135-generic-dbgsym_5.4.0-135.152_amd64.ddeb
+            ddeb_name_format = "linux-image-unsigned-{}-dbgsym_{}.{}_{}.ddeb"
+            expected_ddeb_path = ddeb_name_format.format(
                 self.kdump_file.ddhdr.utsname.release,
+                self.strip_release_variant_tags(self.kdump_file.ddhdr.utsname.release),
+                self.kdump_file.ddhdr.utsname.normalized_version,
+                self.get_architecture(),
             )
 
-            # (mkg): To force pull-lp-ddebs to use launchpadlibrarian.net for download
-            # pass an empty mirror list env variable to the hotkdump, e.g.:
-            # UBUNTUTOOLS_UBUNTU_DDEBS_MIRROR= python3 hotkdump.py -c 123 -d dump.dump
-            pull_args = [
-                "--distro",
-                "ubuntu",
-                "--arch",
-                self.get_architecture(),
-                "--pull",
-                "ddebs",
-                f"linux-image-unsigned-{self.kdump_file.ddhdr.utsname.release}",
-                f"{self.strip_release_variant_tags(self.kdump_file.ddhdr.utsname.release)}"
-                f".{self.kdump_file.ddhdr.utsname.normalized_version}",
-            ]
-            logging.info("Invoking PullPkg().pull with %s", str(pull_args))
+            with switch_cwd(self.params.ddebs_folder_path):
+                # Check if we already have the .ddeb
+                if os.path.exists(expected_ddeb_path):
+                    # Already exists, do not download again
+                    # TODO(mkg): Verify SHA checksum?
+                    logging.info(
+                        "The .ddeb file %s already exists, re-using it",
+                        expected_ddeb_path,
+                    )
+                    # Ensure that the file's last access time is updated
+                    os.utime(expected_ddeb_path, (time.time(), time.time()))
+                    extracted_vmlinux = self.extract_vmlinux_ddeb(expected_ddeb_path)
+                    if extracted_vmlinux:
+                        return expected_ddeb_path
+                    logging.error("Failed to extract ddeb file")
+                    return None
 
-            PullPkg().pull(pull_args)
-            if not os.path.exists(expected_ddeb_path):
-                raise ExceptionWithLog(f"failed to download {expected_ddeb_path}")
+                logging.info(
+                    "Downloading `vmlinux` image for kernel version %s, please be patient...",
+                    self.kdump_file.ddhdr.utsname.release,
+                )
 
-        return expected_ddeb_path
+                # (mkg): To force pull-lp-ddebs to use launchpadlibrarian.net for download
+                # pass an empty mirror list env variable to the hotkdump, e.g.:
+                # UBUNTUTOOLS_UBUNTU_DDEBS_MIRROR= python3 hotkdump.py -c 123 -d dump.dump
+                pull_args = [
+                    "--distro",
+                    "ubuntu",
+                    "--arch",
+                    self.get_architecture(),
+                    "--pull",
+                    "ddebs",
+                    f"linux-image-unsigned-{self.kdump_file.ddhdr.utsname.release}",
+                    f"{self.strip_release_variant_tags(self.kdump_file.ddhdr.utsname.release)}"
+                    f".{self.kdump_file.ddhdr.utsname.normalized_version}",
+                ]
+                logging.info("Invoking PullPkg().pull with %s", str(pull_args))
+
+                PullPkg().pull(pull_args)
+                if not os.path.exists(expected_ddeb_path):
+                    raise ExceptionWithLog(f"failed to download {expected_ddeb_path}")
+            extracted_vmlinux = self.extract_vmlinux_ddeb(expected_ddeb_path)
+            if extracted_vmlinux:
+                return expected_ddeb_path
+            logging.error("Failed to extract ddeb file.")
+        return None
 
     def extract_vmlinux_ddeb(self, ddeb_file):
         """Extract the given vmlinux ddeb file to temp_working_dir/ddeb-root
@@ -498,6 +511,34 @@ class Hotkdump:
             self.crash_executable, f"-x {self.params.dump_file_path} {vmlinux_path}"
         )
 
+    DBG_DDEB = ".ddeb"
+    DBG_VMLINUX = "vmlinux"
+
+    def debug_file_type(self):
+        """Return the current file type by checking the extension"""
+        if self.params.debug_file:
+            filename = os.path.basename(self.params.debug_file).split("/")[-1]
+            if filename.endswith(self.DBG_DDEB):
+                return self.DBG_DDEB
+            if filename.startswith(self.DBG_VMLINUX):
+                return self.DBG_VMLINUX
+        return None
+
+    def maybe_get_user_specified_vmlinux(self):
+        """return the vmlinux file path from the user specified debug file"""
+        if self.params.debug_file:
+            dbg_type = self.debug_file_type()
+            vmlinux_ddeb = self.params.debug_file if dbg_type == self.DBG_DDEB else None
+            extracted_vmlinux = (
+                self.params.debug_file if dbg_type == self.DBG_VMLINUX else None
+            )
+            if vmlinux_ddeb:
+                extracted_vmlinux = self.extract_vmlinux_ddeb(vmlinux_ddeb)
+            if extracted_vmlinux:
+                return extracted_vmlinux
+            logging.error("Failed to retrieve vmlinux file")
+        return None
+
     def run(self):
         """Run hotkdump main routine."""
         try:
@@ -506,19 +547,11 @@ class Hotkdump:
                     print(f"{key}={self.kdump_file.vmcoreinfo.get(key)}")
                 return
 
-            extracted_vmlinux = None
-
-            if not self.params.no_debuginfod:
-                extracted_vmlinux = self.maybe_download_vmlinux_via_debuginfod()
-
-            if not extracted_vmlinux and not self.params.no_pullpkg:
-                vmlinux_ddeb = self.maybe_download_vmlinux_via_pullpkg()
-                if vmlinux_ddeb == "":
-                    logging.error("vmlinux ddeb dowload failed.")
-                    return
-
-                extracted_vmlinux = self.extract_vmlinux_ddeb(vmlinux_ddeb)
-
+            extracted_vmlinux = (
+                self.maybe_get_user_specified_vmlinux()
+                or self.maybe_download_vmlinux_via_debuginfod()
+                or self.maybe_download_vmlinux_via_pullpkg()
+            )
             if not extracted_vmlinux:
                 logging.error("vmlinux image with debug symbols not found, aborting")
                 return
