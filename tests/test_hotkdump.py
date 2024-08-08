@@ -307,8 +307,9 @@ class HotkdumpTest(TestCase):
     @mock.patch("os.utime")
     @mock.patch("hotkdump.core.hotkdump.PullPkg")
     @mock.patch("hotkdump.core.hotkdump.switch_cwd")
+    @mock.patch("subprocess.Popen")
     def test_maybe_download_vmlinux_ddeb(
-        self, mock_switch_cwd, mock_pullpkg, mock_utime
+        self,mock_popen, mock_switch_cwd, mock_pullpkg, mock_utime
     ):
         """Verify that the hotkdump:
         - calls the PullPkg when the ddeb is absent
@@ -340,6 +341,7 @@ class HotkdumpTest(TestCase):
 
         with mock.patch("os.path.exists") as mock_exists:
             mock_exists.side_effect = [False, True]
+            mock_popen.return_value.__enter__.return_value.returncode = 0
             result = uut.maybe_download_vmlinux_via_pullpkg()
 
             mock_exists.assert_called()
@@ -623,7 +625,7 @@ class HotkdumpTest(TestCase):
         params = HotkdumpParameters(debug_file="/path/to/a/ddeb/linux-yy.xx.ddeb",
                                     dump_file_path="empty")
         hkdump = Hotkdump(params)
-        self.assertEqual(hkdump.debug_file_type(), "ddeb")
+        self.assertEqual(hkdump.debug_file_type(), ".ddeb")
 
         hkdump.params.debug_file = "/path/to/a/vmlinux/vmlinux-yy.xx"
         self.assertEqual(hkdump.debug_file_type(), "vmlinux")

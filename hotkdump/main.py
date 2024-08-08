@@ -76,7 +76,6 @@ def main():
         default=None,
     )
     download_methods_group = ap.add_mutually_exclusive_group()
-    # TODO: Do not error out if both arguments are specified and --debug-file is used  
     download_methods_group.add_argument(
         "--no-debuginfod",
         help="Do not use debuginfod for downloads",
@@ -94,6 +93,9 @@ def main():
     # is None
     args = {k: v for k, v in vars(ap.parse_args()).items() if v is not None}
     params = HotkdumpParameters(**args)
+
+    if params.debug_file:
+        params.no_debuginfod = params.no_pullpkg = True
 
     try:
         hotkdump = Hotkdump(parameters=params)
