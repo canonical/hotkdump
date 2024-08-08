@@ -615,3 +615,22 @@ class HotkdumpTest(TestCase):
                 mock.call("/path/to/ddebs/file4.ddeb"),
             ]
         mock_remove.assert_has_calls(expected_calls, any_order=True)
+
+    def test_debug_file_type(self):
+        """
+        Verify that the file type is correctly inferred 
+        """
+        params = HotkdumpParameters(debug_file="/path/to/a/ddeb/linux-yy.xx.ddeb",
+                                    dump_file_path="empty")
+        hkdump = Hotkdump(params)
+        self.assertEqual(hkdump.debug_file_type(), "ddeb")
+
+        hkdump.params.debug_file = "/path/to/a/vmlinux/vmlinux-yy.xx"
+        self.assertEqual(hkdump.debug_file_type(), "vmlinux")
+
+        hkdump.params.debug_file = None
+        self.assertEqual(hkdump.debug_file_type(), None)
+
+        hkdump.params.debug_file = ""
+        self.assertEqual(hkdump.debug_file_type(), None)
+    

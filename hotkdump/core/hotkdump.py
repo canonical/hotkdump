@@ -71,6 +71,7 @@ class HotkdumpParameters:
     print_vmcoreinfo_fields: list = None
     no_debuginfod: bool = False
     no_pullpkg: bool = False
+    debug_file: str = None
 
     def validate_sanity(self):
         """Check whether option values are not contradicting and sane."""
@@ -498,6 +499,15 @@ class Hotkdump:
             self.crash_executable, f"-x {self.params.dump_file_path} {vmlinux_path}"
         )
 
+    def debug_file_type(self):
+        """
+        Return the current file type by checking the extension
+        """
+        if self.params.debug_file:
+            return "ddeb" if self.params.debug_file.endswith(".ddeb") else "vmlinux"
+        else:
+            return None
+
     def run(self):
         """Run hotkdump main routine."""
         try:
@@ -506,17 +516,22 @@ class Hotkdump:
                     print(f"{key}={self.kdump_file.vmcoreinfo.get(key)}")
                 return
 
-            extracted_vmlinux = None
+            dbg_type = self.debug_file_type()
+            vmlinux_ddeb = self.params.debug_file if dbg_type == "ddeb" else None
+            extracted_vmlinux = self.params.debug_file if dbg_type == "vmlinux" else None
 
-            if not self.params.no_debuginfod:
-                extracted_vmlinux = self.maybe_download_vmlinux_via_debuginfod()
+            # Avoid downloading debug symbols if a debug file was specified.
+            if not dbg_type:
+                if not self.params.no_debuginfod:
+                    extracted_vmlinux = self.maybe_download_vmlinux_via_debuginfod()
 
-            if not extracted_vmlinux and not self.params.no_pullpkg:
-                vmlinux_ddeb = self.maybe_download_vmlinux_via_pullpkg()
-                if vmlinux_ddeb == "":
-                    logging.error("vmlinux ddeb dowload failed.")
-                    return
+                if not extracted_vmlinux and not self.params.no_pullpkg:
+                    vmlinux_ddeb = self.maybe_download_vmlinux_via_pullpkg()
+                    if vmlinux_ddeb == "":
+                        logging.error("vmlinux ddeb dowload failed.")
+                        return
 
+            if not extracted_vmlinux:
                 extracted_vmlinux = self.extract_vmlinux_ddeb(vmlinux_ddeb)
 
             if not extracted_vmlinux:

@@ -69,7 +69,14 @@ def main():
         nargs="*",
         default=argparse.SUPPRESS,
     )
+    ap.add_argument(
+        "--debug-file",
+        required=False,
+        help="Specify the debug file to use. Only ddebs and vmlinux files are supported.",
+        default=None,
+    )
     download_methods_group = ap.add_mutually_exclusive_group()
+    # TODO: Do not error out if both arguments are specified and --debug-file is used  
     download_methods_group.add_argument(
         "--no-debuginfod",
         help="Do not use debuginfod for downloads",
