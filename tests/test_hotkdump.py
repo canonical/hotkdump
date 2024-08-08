@@ -304,12 +304,12 @@ class HotkdumpTest(TestCase):
                     ExceptionWithLog, uut.strip_release_variant_tags, input_str
                 )
 
+    @mock.patch("hotkdump.core.hotkdump.Hotkdump.extract_vmlinux_ddeb")
     @mock.patch("os.utime")
     @mock.patch("hotkdump.core.hotkdump.PullPkg")
     @mock.patch("hotkdump.core.hotkdump.switch_cwd")
-    def test_maybe_download_vmlinux_ddeb(
-        self, mock_switch_cwd, mock_pullpkg, mock_utime
-    ):
+    @mock.patch("subprocess.Popen")
+    def test_maybe_download_vmlinux_ddeb(self, *args):
         """Verify that the hotkdump:
         - calls the PullPkg when the ddeb is absent
         - does not call the PullPkg when the ddeb is present
@@ -317,10 +317,10 @@ class HotkdumpTest(TestCase):
         """
         # Set up mock return values
         mock_pull = mock.MagicMock()
-        mock_pullpkg.return_value.pull = mock_pull
+        args[2].return_value.pull = mock_pull
 
         switch_cwd = mock.MagicMock()
-        mock_switch_cwd.return_value = switch_cwd
+        args[1].return_value = switch_cwd
 
         # mock_pull.return_value.pull
         params = HotkdumpParameters(dump_file_path="empty")
@@ -337,9 +337,12 @@ class HotkdumpTest(TestCase):
         expected_ddeb_path = (
             "linux-image-unsigned-5.15.0-1030-gcp-dbgsym_5.15.0-1030.37_amd64.ddeb"
         )
+        expected_vmlinux_path = "/tmp/path/to/vmlinux/file/vmlinux-yy.xx"
+        args[4].return_value = expected_vmlinux_path
 
         with mock.patch("os.path.exists") as mock_exists:
             mock_exists.side_effect = [False, True]
+            args[0].return_value.__enter__.return_value.returncode = 0
             result = uut.maybe_download_vmlinux_via_pullpkg()
 
             mock_exists.assert_called()
@@ -359,7 +362,7 @@ class HotkdumpTest(TestCase):
             )
 
             # Assert that the expected ddeb file path was returned
-            self.assertEqual(result, expected_ddeb_path)
+            self.assertEqual(result, expected_vmlinux_path)
 
         mock_pull.reset_mock()
         # Test reusing an existing ddeb file
@@ -374,12 +377,12 @@ class HotkdumpTest(TestCase):
                 mock_pull.assert_not_called()
 
                 # # Assert that the file's last access time was updated
-                mock_utime.assert_called_once_with(
+                args[3].assert_called_once_with(
                     expected_ddeb_path, (1234567890.0, 1234567890.0)
                 )
 
                 # Assert that the expected ddeb file path was returned
-                self.assertEqual(result, expected_ddeb_path)
+                self.assertEqual(result, expected_vmlinux_path)
 
         # Test failing to download a new ddeb file
         mock_pull.return_value = Exception("Error")
@@ -615,3 +618,44 @@ class HotkdumpTest(TestCase):
                 mock.call("/path/to/ddebs/file4.ddeb"),
             ]
         mock_remove.assert_has_calls(expected_calls, any_order=True)
+
+    def test_debug_file_type(self):
+        """Verify that the file type is correctly inferred"""
+        params = HotkdumpParameters(
+            debug_file="/path/to/a/ddeb/linux-yy.xx.ddeb", dump_file_path="empty"
+        )
+        hkdump = Hotkdump(params)
+        self.assertEqual(hkdump.debug_file_type(), ".ddeb")
+
+        hkdump.params.debug_file = "/path/to/a/vmlinux/vmlinux-yy.xx"
+        self.assertEqual(hkdump.debug_file_type(), "vmlinux")
+
+        hkdump.params.debug_file = None
+        self.assertEqual(hkdump.debug_file_type(), None)
+
+        hkdump.params.debug_file = ""
+        self.assertEqual(hkdump.debug_file_type(), None)
+
+    @mock.patch("hotkdump.core.hotkdump.Hotkdump.extract_vmlinux_ddeb")
+    def test_maybe_get_user_specified_vmlinux(self, mock_extract_ddeb):
+        """Verify that the correct user psecified vmlinux file path is returned"""
+        ddeb_path = "/tmp/home/user/path/to/ddeb/linux-yy.xx.ddeb"
+        vmlinux_path = "/tmp/home/user/path/to/vmlinux/vmlinux-yy.xx"
+        ex_ddeb_path = "/tmp/home/user/path/to/ddeb/tmp/ddeb-root/vmlinux-yy.xx"
+
+        # Mocks a failed extraction
+        mock_extract_ddeb.return_value = None
+
+        params = HotkdumpParameters(debug_file=ddeb_path, dump_file_path="empty")
+        hkdump = Hotkdump(params)
+        self.assertEqual(hkdump.maybe_get_user_specified_vmlinux(), None)
+
+        # Mocks a successfull extraction
+        mock_extract_ddeb.return_value = ex_ddeb_path
+        self.assertEqual(hkdump.maybe_get_user_specified_vmlinux(), ex_ddeb_path)
+
+        hkdump.params.debug_file = vmlinux_path
+        self.assertEqual(hkdump.maybe_get_user_specified_vmlinux(), vmlinux_path)
+
+        hkdump.params.debug_file = None
+        self.assertEqual(hkdump.maybe_get_user_specified_vmlinux(), None)

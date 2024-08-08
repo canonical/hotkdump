@@ -69,15 +69,16 @@ class HotkdumpParameters:
         )
     )
     print_vmcoreinfo_fields: list = None
+    debug_file: str = None
     no_debuginfod: bool = False
     no_pullpkg: bool = False
 
     def validate_sanity(self):
         """Check whether option values are not contradicting and sane."""
 
-        if all([self.no_debuginfod, self.no_pullpkg]):
+        if all([self.no_debuginfod, self.no_pullpkg, not self.debug_file]):
             raise ExceptionWithLog(
-                "At least one download method must be enabled (debuginfod, pullpkg)!"
+                "At least one download method must be enabled (debuginfod, pullpkg) or a debug file must be specified!"
             )
 
         self.ddeb_retention_settings.validate_sanity()
@@ -341,6 +342,8 @@ class Hotkdump:
         """Try downloading vmlinux image with debug information
         using debuginfod-find."""
         try:
+            if self.params.no_debuginfod:
+                return None
             debuginfod_find_path = self.find_debuginfod_find_executable()
             if not debuginfod_find_path:
                 logging.debug("debuginfod-find is not present in environment.")
@@ -394,6 +397,8 @@ class Hotkdump:
         Returns:
             str: The path to the .ddeb file
         """
+        if self.params.no_pullpkg:
+            return None
         # Parameters are: release, release{without -generic}, normalized version, arch
         # linux-image-unsigned-5.4.0-135-generic-dbgsym_5.4.0-135.152_amd64.ddeb
         ddeb_name_format = "linux-image-unsigned-{}-dbgsym_{}.{}_{}.ddeb"
@@ -414,7 +419,11 @@ class Hotkdump:
                 )
                 # Ensure that the file's last access time is updated
                 os.utime(expected_ddeb_path, (time.time(), time.time()))
-                return expected_ddeb_path
+                extracted_vmlinux = self.extract_vmlinux_ddeb(expected_ddeb_path)
+                if extracted_vmlinux:
+                    return extracted_vmlinux
+                logging.error("Failed to extract ddeb file")
+                return None
 
             logging.info(
                 "Downloading `vmlinux` image for kernel version %s, please be patient...",
@@ -440,8 +449,11 @@ class Hotkdump:
             PullPkg().pull(pull_args)
             if not os.path.exists(expected_ddeb_path):
                 raise ExceptionWithLog(f"failed to download {expected_ddeb_path}")
-
-        return expected_ddeb_path
+        extracted_vmlinux = self.extract_vmlinux_ddeb(expected_ddeb_path)
+        if extracted_vmlinux:
+            return extracted_vmlinux
+        logging.error("Failed to extract ddeb file.")
+        return None
 
     def extract_vmlinux_ddeb(self, ddeb_file):
         """Extract the given vmlinux ddeb file to temp_working_dir/ddeb-root
@@ -498,6 +510,36 @@ class Hotkdump:
             self.crash_executable, f"-x {self.params.dump_file_path} {vmlinux_path}"
         )
 
+    DBG_DDEB = ".ddeb"
+    DBG_VMLINUX = "vmlinux"
+
+    def debug_file_type(self):
+        """Return the current file type by checking the extension"""
+        if self.params.debug_file:
+            filename = os.path.basename(self.params.debug_file).split("/")[-1]
+            if filename.endswith(self.DBG_DDEB):
+                return self.DBG_DDEB
+            if filename.startswith(self.DBG_VMLINUX):
+                return self.DBG_VMLINUX
+        return None
+
+    def maybe_get_user_specified_vmlinux(self):
+        """return the vmlinux file path from the user specified debug file"""
+        if not self.params.debug_file:
+            return None
+
+        dbg_type = self.debug_file_type()
+        vmlinux_ddeb = self.params.debug_file if dbg_type == self.DBG_DDEB else None
+        extracted_vmlinux = (
+            self.params.debug_file if dbg_type == self.DBG_VMLINUX else None
+        )
+        if vmlinux_ddeb:
+            extracted_vmlinux = self.extract_vmlinux_ddeb(vmlinux_ddeb)
+        if extracted_vmlinux:
+            return extracted_vmlinux
+        logging.error("Failed to retrieve vmlinux file")
+        return None
+
     def run(self):
         """Run hotkdump main routine."""
         try:
@@ -506,19 +548,11 @@ class Hotkdump:
                     print(f"{key}={self.kdump_file.vmcoreinfo.get(key)}")
                 return
 
-            extracted_vmlinux = None
-
-            if not self.params.no_debuginfod:
-                extracted_vmlinux = self.maybe_download_vmlinux_via_debuginfod()
-
-            if not extracted_vmlinux and not self.params.no_pullpkg:
-                vmlinux_ddeb = self.maybe_download_vmlinux_via_pullpkg()
-                if vmlinux_ddeb == "":
-                    logging.error("vmlinux ddeb dowload failed.")
-                    return
-
-                extracted_vmlinux = self.extract_vmlinux_ddeb(vmlinux_ddeb)
-
+            extracted_vmlinux = (
+                self.maybe_get_user_specified_vmlinux()
+                or self.maybe_download_vmlinux_via_debuginfod()
+                or self.maybe_download_vmlinux_via_pullpkg()
+            )
             if not extracted_vmlinux:
                 logging.error("vmlinux image with debug symbols not found, aborting")
                 return

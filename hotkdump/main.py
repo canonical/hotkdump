@@ -69,6 +69,15 @@ def main():
         nargs="*",
         default=argparse.SUPPRESS,
     )
+    ap.add_argument(
+        "--debug-file",
+        required=False,
+        help=(
+            "Specify the debug file to use. Only ddebs and vmlinux files are supported. "
+            "Disables downloads (--no-debuginfod and --no-pullpkg)"
+        ),
+        default=None,
+    )
     download_methods_group = ap.add_mutually_exclusive_group()
     download_methods_group.add_argument(
         "--no-debuginfod",
@@ -87,6 +96,9 @@ def main():
     # is None
     args = {k: v for k, v in vars(ap.parse_args()).items() if v is not None}
     params = HotkdumpParameters(**args)
+
+    if params.debug_file:
+        params.no_debuginfod = params.no_pullpkg = True
 
     try:
         hotkdump = Hotkdump(parameters=params)
