@@ -17,6 +17,13 @@ import time
 import textwrap
 from datetime import datetime
 from dataclasses import dataclass, field
+import warnings
+
+try:
+    from importlib.resources import read_text
+except ModuleNotFoundError:
+    from importlib_resources import read_text
+
 
 try:
     from ubuntutools.pullpkg import PullPkg
@@ -26,6 +33,8 @@ try:
 except ModuleNotFoundError as exc:
     raise ModuleNotFoundError("\n\n`hotkdump` needs ubuntu.pullpkg to function.\n"
                               "Install it via `sudo apt install ubuntu-dev-tools`") from exc
+
+from jinja2 import Template
 
 from hotkdump.core.exceptions import ExceptionWithLog
 from hotkdump.core.kdumpfile import KdumpFile
@@ -107,7 +116,6 @@ class Hotkdump:
         self.temp_working_dir = tempfile.TemporaryDirectory()
         logging.debug(
             "created %s temporary directory for the intermediary files", self.temp_working_dir.name)
-        self.commands_file_path = self.write_crash_commands_file()
 
         # Create the ddeb path if not exists
         os.makedirs(self.params.ddebs_folder_path, exist_ok=True)
@@ -181,90 +189,23 @@ class Hotkdump:
             pass
 
     def write_crash_commands_file(self):
-        """The crash_commands file we generate should look like
-
-            !echo "Output of sys\n" >> hotkdump.out
-            sys >> hotkdump.out
-            !echo "\nOutput of bt\n" >> hotkdump.out
-            bt >> hotkdump.out
-            !echo "\nOutput of log with audit messages filtered out\n" >> hotkdump.out
-            log | grep -vi audit >> hotkdump.out
-            !echo "\nOutput of kmem -i\n" >> hotkdump.out
-            kmem -i >> hotkdump.out
-            !echo "\nOutput of dev -d\n" >> hotkdump.out
-            dev -d >> hotkdump.out
-            !echo "\nLongest running blocked processes\n" >> hotkdump.out
-            ps -m | grep UN | tail >> hotkdump.out
-            quit >> hotkdump.out
-        """
+        """Render and write the crash_commands file."""
         commands_file = f"{self.temp_working_dir.name}/crash_commands"
         of_path = self.params.output_file_path
 
-        # pylint
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=DeprecationWarning)
+            # Read & render the template
+            jinja_template_content = read_text(
+                "hotkdump.templates", "crash_commands.jinja")
+
+        template = Template(jinja_template_content)
+        rendered_content = template.render(
+            output_file_path=of_path, commands_file_name=commands_file
+        )
+
         with open(commands_file, "w", encoding="utf-8") as ccfile:
-            # (mkg): the file uses self-append to evaluate commands depend on
-            # the information extracted from a prior command invocation. This
-            # is possible because POSIX guarantees that:
-            #   "If a read() of file data can be proven (by any means) to occur
-            #   after a write() of the data, it must reflect that write(), even
-            #   if the calls are made by different processes."
-            # pylint: disable=line-too-long
-            commands_file_content = fr"""
-            !echo "---------------------------------------" >> {of_path}
-            !echo "Output of 'sys'" >> {of_path}
-            !echo "---------------------------------------" >> {of_path}
-            sys >> {of_path}
-            !echo "---------------------------------------" >> {of_path}
-            !echo "Output of 'bt'" >> {of_path}
-            !echo "---------------------------------------" >> {of_path}
-            bt >> {of_path}
-            !echo "---------------------------------------" >> {of_path}
-            !echo "Output of 'log' with audit messages filtered out" >> {of_path}
-            !echo "---------------------------------------" >> {of_path}
-            log | grep -vi audit >> {of_path}
-            !echo "---------------------------------------" >> {of_path}
-            !echo "Output of 'kmem -i'" >> {of_path}
-            !echo "---------------------------------------" >> {of_path}
-            kmem -i >> {of_path}
-            !echo "---------------------------------------" >> {of_path}
-            !echo "Output of 'dev -d'" >> {of_path}
-            !echo "---------------------------------------" >> {of_path}
-            dev -d >> {of_path}
-            !echo "---------------------------------------" >> {of_path}
-            !echo "Output of 'mount'" >> {of_path}
-            !echo "---------------------------------------" >> {of_path}
-            mount >> {of_path}
-            !echo "---------------------------------------" >> {of_path}
-            !echo "Output of 'files'" >> {of_path}
-            !echo "---------------------------------------" >> {of_path}
-            files >> {of_path}
-            !echo "---------------------------------------" >> {of_path}
-            !echo "Output of 'vm'" >> {of_path}
-            !echo "---------------------------------------" >> {of_path}
-            vm >> {of_path}
-            !echo "---------------------------------------" >> {of_path}
-            !echo "Output of 'net'" >> {of_path}
-            !echo "---------------------------------------" >> {of_path}
-            net >> {of_path}
-            !echo "---------------------------------------" >> {of_path}
-            !echo "Longest running blocked processes" >> {of_path}
-            !echo "---------------------------------------" >> {of_path}
-            ps -m | grep UN | tail >> {of_path}
-            !echo "---------------------------------------" >> {of_path}
-            !echo "Top 20 memory consumers" >> {of_path}
-            !echo "---------------------------------------" >> {of_path}
-            ps -G | sed 's/>//g' | sort -k 8,8 -n |  awk '$8 ~ /[0-9]/{{ $8 = $8/1024" MB"; print }}' | tail -20 | sort -r -k8,8 -g >> {of_path}
-            !echo "\n!echo '---------------------------------------' >> {of_path}" >> {commands_file}
-            !echo "\n!echo 'BT of the longest running blocked process' >> {of_path}" >> {commands_file}
-            !echo "\n!echo '---------------------------------------' >> {of_path}" >> {commands_file}
-            ps -m | grep UN | tail -n1 | grep -oE "PID: [0-9]+" | grep -oE "[0-9]+" | awk '{{print "bt " $1 " >> {of_path}"}}' >> {commands_file}
-            !echo "\nquit >> {of_path}" >> {commands_file}
-            !echo "" >> {of_path}"""
-            # (mkg): The last empty echo is important to allow
-            # crash to pick up the commands appended to the command
-            # file at the runtime.
-            final_cmdfile_contents = textwrap.dedent(
-                commands_file_content).strip()
+            final_cmdfile_contents = textwrap.dedent(rendered_content).strip()
             ccfile.write(final_cmdfile_contents)
             logging.debug(
                 "command file %s rendered with contents: %s", commands_file, final_cmdfile_contents)
@@ -351,7 +292,6 @@ class Hotkdump:
             if maximum > 0:
                 pct = int((current / maximum) * 100)
                 self.debuginfod_find_progress.update(pct, 100)
-
 
     def maybe_download_vmlinux_via_debuginfod(self):
         """Try downloading vmlinux image with debug information
@@ -471,9 +411,9 @@ class Hotkdump:
         """Print a summary of the vmcore file to the output file
         """
         logging.info("Loading `vmcore` file %s into `crash`, please wait..", self.params.dump_file_path)
-
+        commands_file_path = self.write_crash_commands_file()
         self.exec(self.crash_executable,
-                  f"-x -i {self.commands_file_path} -s {self.params.dump_file_path} {vmlinux_path}")
+                  f"-x -i {commands_file_path} -s {self.params.dump_file_path} {vmlinux_path}")
         logging.info("See %s for logs, %s for outputs", self.params.log_file_path, self.params.output_file_path)
 
     def launch_crash(self, vmlinux_path:str):
