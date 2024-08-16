@@ -45,7 +45,7 @@ MOCK_HDR = fill_zeros(
     "os",
     remove=lambda x: True,
     listdir=lambda x: [],
-    stat=lambda x: "a",
+    stat=lambda x, *args, **kwargs: "a",
     makedirs=lambda *a, **kw: None,
 )
 @mock.patch.multiple(
@@ -223,7 +223,7 @@ class HotkdumpTest(TestCase):
         !echo "---------------------------------------" >> hkd.test
         !echo "Top 20 memory consumers" >> hkd.test
         !echo "---------------------------------------" >> hkd.test
-        ps -G | sed 's/>//g' | sort -k 8,8 -n |  awk '$8 ~ /[0-9]/{ $8 = $8/1024" MB"; print }' | tail -20 | sort -r -k8,8 -g >> hkd.test
+        ps -G | sed 's/>//g' | sort -k 8,8 -n | awk '$8 ~ /[0-9]/{ $8 = $8/1024" MB"; print }' | tail -20 | sort -r -k8,8 -g >> hkd.test
         !echo "\n!echo '---------------------------------------' >> hkd.test" >> /tmpdir/crash_commands
         !echo "\n!echo 'BT of the longest running blocked process' >> hkd.test" >> /tmpdir/crash_commands
         !echo "\n!echo '---------------------------------------' >> hkd.test" >> /tmpdir/crash_commands

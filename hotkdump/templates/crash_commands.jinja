@@ -1,0 +1,64 @@
+{#
+# (mkg): the file uses self-append to evaluate commands depend on
+# the information extracted from a prior command invocation. This
+# is possible because POSIX guarantees that:
+#   "If a read() of file data can be proven (by any means) to occur
+#   after a write() of the data, it must reflect that write(), even
+#   if the calls are made by different processes."
+#}
+
+!echo "---------------------------------------" >> {{ output_file_path }}
+!echo "Output of 'sys'" >> {{ output_file_path }}
+!echo "---------------------------------------" >> {{ output_file_path }}
+sys >> {{ output_file_path }}
+!echo "---------------------------------------" >> {{ output_file_path }}
+!echo "Output of 'bt'" >> {{ output_file_path }}
+!echo "---------------------------------------" >> {{ output_file_path }}
+bt >> {{ output_file_path }}
+!echo "---------------------------------------" >> {{ output_file_path }}
+!echo "Output of 'log' with audit messages filtered out" >> {{ output_file_path }}
+!echo "---------------------------------------" >> {{ output_file_path }}
+log | grep -vi audit >> {{ output_file_path }}
+!echo "---------------------------------------" >> {{ output_file_path }}
+!echo "Output of 'kmem -i'" >> {{ output_file_path }}
+!echo "---------------------------------------" >> {{ output_file_path }}
+kmem -i >> {{ output_file_path }}
+!echo "---------------------------------------" >> {{ output_file_path }}
+!echo "Output of 'dev -d'" >> {{ output_file_path }}
+!echo "---------------------------------------" >> {{ output_file_path }}
+dev -d >> {{ output_file_path }}
+!echo "---------------------------------------" >> {{ output_file_path }}
+!echo "Output of 'mount'" >> {{ output_file_path }}
+!echo "---------------------------------------" >> {{ output_file_path }}
+mount >> {{ output_file_path }}
+!echo "---------------------------------------" >> {{ output_file_path }}
+!echo "Output of 'files'" >> {{ output_file_path }}
+!echo "---------------------------------------" >> {{ output_file_path }}
+files >> {{ output_file_path }}
+!echo "---------------------------------------" >> {{ output_file_path }}
+!echo "Output of 'vm'" >> {{ output_file_path }}
+!echo "---------------------------------------" >> {{ output_file_path }}
+vm >> {{ output_file_path }}
+!echo "---------------------------------------" >> {{ output_file_path }}
+!echo "Output of 'net'" >> {{ output_file_path }}
+!echo "---------------------------------------" >> {{ output_file_path }}
+net >> {{ output_file_path }}
+!echo "---------------------------------------" >> {{ output_file_path }}
+!echo "Longest running blocked processes" >> {{ output_file_path }}
+!echo "---------------------------------------" >> {{ output_file_path }}
+ps -m | grep UN | tail >> {{ output_file_path }}
+!echo "---------------------------------------" >> {{ output_file_path }}
+!echo "Top 20 memory consumers" >> {{ output_file_path }}
+!echo "---------------------------------------" >> {{ output_file_path }}
+ps -G | sed 's/>//g' | sort -k 8,8 -n | awk '$8 ~ /[0-9]/{ $8 = $8/1024" MB"; print }' | tail -20 | sort -r -k8,8 -g >> {{ output_file_path }}
+!echo "\n!echo '---------------------------------------' >> {{ output_file_path }}" >> {{ commands_file_name }}
+!echo "\n!echo 'BT of the longest running blocked process' >> {{ output_file_path }}" >> {{ commands_file_name }}
+!echo "\n!echo '---------------------------------------' >> {{ output_file_path }}" >> {{ commands_file_name }}
+ps -m | grep UN | tail -n1 | grep -oE "PID: [0-9]+" | grep -oE "[0-9]+" | awk '{print "bt " $1 " >> {{ output_file_path }}"}' >> {{ commands_file_name }}
+!echo "\nquit >> {{ output_file_path }}" >> {{ commands_file_name }}
+!echo "" >> {{ output_file_path }}
+{#
+# (mkg): The last empty echo is important to allow
+# crash to pick up the commands appended to the command
+# file at the runtime.
+#}
