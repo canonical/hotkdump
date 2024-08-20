@@ -8,7 +8,7 @@ readme = "README.md"
 requires-python = ">=3.6"
 license = { file = "LICENSE" }
 keywords = ["crash", "debugging", "kdump"]
-dependencies = [ "dataclasses;python_version<'3.7'", "jinja2==3.0.3", "importlib_resources;python_version<'3.7'"]
+dependencies = [ "dataclasses;python_version<'3.7'", "jinja2==3.1.4", "importlib_resources;python_version<'3.7'"]
 classifiers = [
   # How mature is this project? Common values are
   #   3 - Alpha
