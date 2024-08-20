@@ -72,7 +72,10 @@ def main():
     ap.add_argument(
         "--debug-file",
         required=False,
-        help="Specify the debug file to use. Only ddebs and vmlinux files are supported.",
+        help=(
+            "Specify the debug file to use. Only ddebs and vmlinux files are supported. "
+            "Disables downloads (--no-debuginfod and --no-pullpkg)"
+        ),
         default=None,
     )
     download_methods_group = ap.add_mutually_exclusive_group()
