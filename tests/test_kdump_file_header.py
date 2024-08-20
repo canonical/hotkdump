@@ -139,7 +139,6 @@ class KdumpDiskDumpHeaderTest(TestCase):
 
 
 class TestKdumpSubHeader(TestCase):
-
     def setUp(self):
         self.fake_file_content = (
             b"\x01\x00\x00\x00\x00\x00\x00\x00"  # phys_base
@@ -210,7 +209,6 @@ class TestKdumpFile(TestCase):
 
     @mock.patch("builtins.open", new_callable=mock.mock_open, read_data=b"")
     def test_init_valid_kdump_file_flattened(self, mfile):
-
         fake_vmcoreinfo = b"""key=value
 this is a key=value value
 $$=@@
@@ -393,7 +391,9 @@ $$=@@
         with self.assertRaises(NotAKernelCrashDumpException):
             _ = KdumpFile("dummy_path")
 
-    @mock.patch("builtins.open", MockFileCtx(file_bytes=MOCK_HDR_INVALID_NO_SIG, name="name"))
+    @mock.patch(
+        "builtins.open", MockFileCtx(file_bytes=MOCK_HDR_INVALID_NO_SIG, name="name")
+    )
     def test_kdump_hdr_no_sig(self):
         """Test kdump file header parsing with
         garbage input.

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
-"""Test utility/helper types.
-"""
+"""Test utility/helper types."""
 
 # Copyright 2023 Canonical Limited.
 # SPDX-License-Identifier: GPL-3.0
@@ -9,7 +8,7 @@
 import io
 
 
-def pad(by, n, pad_chr = b"\0"):
+def pad(by, n, pad_chr=b"\0"):
     """Fill the remaning space of a bytes array with zeros."""
     by += pad_chr * (n - len(by))
     return by
@@ -48,6 +47,7 @@ def assert_has_no_such_calls(self, *args, **kwargs):
 
 class IOAdapter(io.BytesIO):
     """Mock BytesIO class."""
+
     def write(self, value):
         if isinstance(value, str):
             return super().write(value.encode())
@@ -67,6 +67,7 @@ class IOAdapter(io.BytesIO):
 
 class MockFileObject(IOAdapter):
     """Mock file object."""
+
     def __init__(self, file_bytes, name):
         super().__init__(file_bytes)
         self.name = name
@@ -101,6 +102,7 @@ class MockFileCtx:
 
 class MockStatObj:
     """Poor man's stat object."""
+
     def __init__(self, name, mock_data) -> None:
         self.name = name
         self.mock_data = mock_data

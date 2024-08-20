@@ -3,8 +3,7 @@
 # Copyright 2023 Canonical Limited.
 # SPDX-License-Identifier: GPL-3.0
 
-"""Folder retention manager and its' policies.
-"""
+"""Folder retention manager and its' policies."""
 
 import abc
 import os
@@ -17,8 +16,7 @@ from hotkdump.core.exceptions import ExceptionWithLog
 
 
 class RetentionPolicyBase(abc.ABC):
-    """Base class for all retention policies.
-    """
+    """Base class for all retention policies."""
 
     @property
     @abc.abstractmethod
@@ -33,8 +31,13 @@ class RetentionPolicyBase(abc.ABC):
         """Remove a file."""
         (path, stat) = file_info
         os.remove(path)
-        logging.debug("removed %s to reclaim %s. age: %2f seconds. reason: %s ",
-                      path, pretty_size(stat.st_size), (time.time() - stat.st_atime), self.name)
+        logging.debug(
+            "removed %s to reclaim %s. age: %2f seconds. reason: %s ",
+            path,
+            pretty_size(stat.st_size),
+            (time.time() - stat.st_atime),
+            self.name,
+        )
 
 
 class RPTotalFileCount(RetentionPolicyBase):
@@ -81,21 +84,21 @@ class RPTotalFileSize(RetentionPolicyBase):
         return "total file size policy"
 
     def execute(self, file_infos: list) -> list:
-
         def total_size():
             return sum(finfo[1].st_size for finfo in file_infos)
 
         if total_size() >= self.high_watermark_bytes:
             logging.debug(
                 "total ddeb size of %s exceeds the high watermark %s, starting cleanup.",
-                pretty_size(total_size()), pretty_size(self.high_watermark_bytes)
+                pretty_size(total_size()),
+                pretty_size(self.high_watermark_bytes),
             )
             # Remove files until total size is below the low watermark
             while len(file_infos) > 0:
                 if total_size() < self.low_wm_bytes:
                     logging.debug(
                         "total ddeb folder size is now below %s low watermark, stopping cleanup.",
-                        pretty_size(self.low_wm_bytes)
+                        pretty_size(self.low_wm_bytes),
                     )
                     break
                 ddeb_info = file_infos.pop()
@@ -153,8 +156,9 @@ class RPNoCriteria(RetentionPolicyBase):
 
 
 @dataclass
-class FolderRetentionManagerSettings():
+class FolderRetentionManagerSettings:
     """Settings for folder retention manager."""
+
     enabled: bool
     size_hwm: int
     size_lwm: int
@@ -170,12 +174,12 @@ class FolderRetentionManagerSettings():
         if self._size_enabled:
             if self.size_hwm < self.size_lwm:
                 raise ExceptionWithLog(
-                    "ddeb high watermark cannot be less than low watermark!")
+                    "ddeb high watermark cannot be less than low watermark!"
+                )
 
 
-class FolderRetentionManager():
-    """Policy-based folder retention manager.
-    """
+class FolderRetentionManager:
+    """Policy-based folder retention manager."""
 
     def __init__(self, folder_paths, filter_function) -> None:
         self.folder_paths = folder_paths
@@ -225,7 +229,8 @@ class FolderRetentionManager():
             files = policy.execute(files)
         logging.debug(
             "postrun-aftermath: ddeb folder final size %s, %d cached ddebs remain.",
-            pretty_size(sum(finfo[1].st_size for finfo in files)), len(files)
+            pretty_size(sum(finfo[1].st_size for finfo in files)),
+            len(files),
         )
 
         return [x for x in self.files if x not in files]

@@ -3,8 +3,7 @@
 # Copyright 2023 Canonical Limited.
 # SPDX-License-Identifier: GPL-3.0
 
-""" `hotkdump` CLI entry point.
-"""
+"""`hotkdump` CLI entry point."""
 
 import sys
 import os
@@ -21,8 +20,8 @@ sys.path.append(this_script_dir)
 # These are actually need to be run after the sys.path is updated, so
 # we're silencing the warning.
 # pylint: disable=wrong-import-position
-from hotkdump.core.hotkdump import Hotkdump, HotkdumpParameters # noqa: E402
-from hotkdump.core.exceptions import NotAKernelCrashDumpException # noqa: E402
+from hotkdump.core.hotkdump import Hotkdump, HotkdumpParameters  # noqa: E402
+from hotkdump.core.exceptions import NotAKernelCrashDumpException  # noqa: E402
 
 
 def main():
@@ -35,7 +34,7 @@ def main():
         "--dump-file-path",
         help="Path to the Linux kernel crash dump",
         required=True,
-        default=argparse.SUPPRESS
+        default=argparse.SUPPRESS,
     )
     ap.add_argument(
         "-c",
@@ -68,7 +67,7 @@ def main():
         required=False,
         help="Read and print the specified VMCOREINFO fields from the given kernel crash dump, then exit.",
         nargs="*",
-        default=argparse.SUPPRESS
+        default=argparse.SUPPRESS,
     )
     download_methods_group = ap.add_mutually_exclusive_group()
     download_methods_group.add_argument(

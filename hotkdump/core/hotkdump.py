@@ -3,8 +3,7 @@
 # Copyright 2023 Canonical Limited.
 # SPDX-License-Identifier: GPL-3.0
 
-"""The main `hotkdump` class implementation.
-"""
+"""The main `hotkdump` class implementation."""
 
 import os
 import re
@@ -27,32 +26,33 @@ except ModuleNotFoundError:
 
 try:
     from ubuntutools.pullpkg import PullPkg
+
     # pylint: disable-next=import-private-name
     from ubuntutools.misc import _StderrProgressBar
     from ubuntutools import getLogger as ubuntutools_GetLogger
 except ModuleNotFoundError as exc:
-    raise ModuleNotFoundError("\n\n`hotkdump` needs ubuntu.pullpkg to function.\n"
-                              "Install it via `sudo apt install ubuntu-dev-tools`") from exc
+    raise ModuleNotFoundError(
+        "\n\n`hotkdump` needs ubuntu.pullpkg to function.\n"
+        "Install it via `sudo apt install ubuntu-dev-tools`"
+    ) from exc
 
 from jinja2 import Template
 
 from hotkdump.core.exceptions import ExceptionWithLog
 from hotkdump.core.kdumpfile import KdumpFile
 from hotkdump.core.utils import pretty_size
-from hotkdump.core.folder_retention_manager import(
+from hotkdump.core.folder_retention_manager import (
     FolderRetentionManager,
-    FolderRetentionManagerSettings
+    FolderRetentionManagerSettings,
 )
-from hotkdump.core.utils import (
-    mktemppath,
-    switch_cwd
-)
+from hotkdump.core.utils import mktemppath, switch_cwd
 
 
 @dataclass()
 # pylint: disable-next=too-many-instance-attributes
 class HotkdumpParameters:
     """Parameters for hotkdump."""
+
     dump_file_path: str
     internal_case_number: str = None
     interactive: bool = False
@@ -60,13 +60,14 @@ class HotkdumpParameters:
     log_file_path: str = mktemppath("hotkdump.log")
     ddebs_folder_path: str = mktemppath("hotkdump", "ddebs")
     ddeb_retention_settings: FolderRetentionManagerSettings = field(
-        default_factory=lambda : FolderRetentionManagerSettings(
-            enabled = True,
-            size_hwm = (1<<30) * 10, # 10GiB,
-            size_lwm = (1<<30) * 2, # 2GiB,
-            max_age_secs = 86400 * 15, # 15 days
-            max_count = 5
-        ))
+        default_factory=lambda: FolderRetentionManagerSettings(
+            enabled=True,
+            size_hwm=(1 << 30) * 10,  # 10GiB,
+            size_lwm=(1 << 30) * 2,  # 2GiB,
+            max_age_secs=86400 * 15,  # 15 days
+            max_count=5,
+        )
+    )
     print_vmcoreinfo_fields: list = None
     no_debuginfod: bool = False
     no_pullpkg: bool = False
@@ -81,9 +82,9 @@ class HotkdumpParameters:
 
         self.ddeb_retention_settings.validate_sanity()
 
+
 class Hotkdump:
-    """the hotkdump class implementation.
-    """
+    """the hotkdump class implementation."""
 
     def __init__(self, parameters: HotkdumpParameters):
         """initialize a new hotkdump instance
@@ -105,9 +106,11 @@ class Hotkdump:
 
         self.touch_file(self.params.output_file_path)
         tstamp_now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        vmcore_filename = self.params.dump_file_path.rsplit('/', 1)[-1]
+        vmcore_filename = self.params.dump_file_path.rsplit("/", 1)[-1]
         with open(self.params.output_file_path, "w", encoding="utf-8") as outfile:
-            outfile.write(f"{tstamp_now}: processing {vmcore_filename} (CASE# {self.params.internal_case_number})\n")
+            outfile.write(
+                f"{tstamp_now}: processing {vmcore_filename} (CASE# {self.params.internal_case_number})\n"
+            )
 
         self.kdump_file = KdumpFile(self.params.dump_file_path)
 
@@ -115,7 +118,9 @@ class Hotkdump:
         # pylint: disable=consider-using-with
         self.temp_working_dir = tempfile.TemporaryDirectory()
         logging.debug(
-            "created %s temporary directory for the intermediary files", self.temp_working_dir.name)
+            "created %s temporary directory for the intermediary files",
+            self.temp_working_dir.name,
+        )
 
         # Create the ddeb path if not exists
         os.makedirs(self.params.ddebs_folder_path, exist_ok=True)
@@ -138,7 +143,8 @@ class Hotkdump:
 
         # FIXME(mkg): Add other architectures as well
         raise NotImplementedError(
-            f"Machine architecture {self.kdump_file.ddhdr.utsname.machine} not recognized!")
+            f"Machine architecture {self.kdump_file.ddhdr.utsname.machine} not recognized!"
+        )
 
     @staticmethod
     def find_debuginfod_find_executable():
@@ -153,22 +159,23 @@ class Hotkdump:
             str: <root_dir>/crash if script path contains a `crash` symlink
             str: result of `which crash` otherwise
         """
-        crash_symlink_path = os.path.dirname(
-            os.path.realpath(__file__)) + "/../crash"
-        crash = crash_symlink_path if os.path.exists(
-            crash_symlink_path) else shutil.which("crash")
+        crash_symlink_path = os.path.dirname(os.path.realpath(__file__)) + "/../crash"
+        crash = (
+            crash_symlink_path
+            if os.path.exists(crash_symlink_path)
+            else shutil.which("crash")
+        )
         if crash is None:
             raise ExceptionWithLog("Could not find the `crash` executable!")
         return crash
 
     def initialize_logging(self):
-        """Initialize logging for hotkdump
-        """
+        """Initialize logging for hotkdump"""
         self.logger = logging.getLogger()
         file_logger = logging.FileHandler(filename=self.params.log_file_path)
         console_logger = logging.StreamHandler(sys.stdout)
         # Allow log level overrides from environment
-        level = os.environ.get('HOTKDUMP_LOGLEVEL', 'INFO').upper()
+        level = os.environ.get("HOTKDUMP_LOGLEVEL", "INFO").upper()
 
         for logger in (file_logger, console_logger, self.logger):
             logger.setLevel(level)
@@ -180,7 +187,8 @@ class Hotkdump:
         for handler in ubuntutools_GetLogger().handlers:
             handler.addFilter(
                 # pylint: disable=magic-value-comparison
-                lambda r: "Downloading" in r.msg or r.levelno >= logging.ERROR)
+                lambda r: "Downloading" in r.msg or r.levelno >= logging.ERROR
+            )
 
     @staticmethod
     def touch_file(fname):
@@ -197,7 +205,8 @@ class Hotkdump:
             warnings.filterwarnings("ignore", category=DeprecationWarning)
             # Read & render the template
             jinja_template_content = read_text(
-                "hotkdump.templates", "crash_commands.jinja")
+                "hotkdump.templates", "crash_commands.jinja"
+            )
 
         template = Template(jinja_template_content)
         rendered_content = template.render(
@@ -208,7 +217,10 @@ class Hotkdump:
             final_cmdfile_contents = textwrap.dedent(rendered_content).strip()
             ccfile.write(final_cmdfile_contents)
             logging.debug(
-                "command file %s rendered with contents: %s", commands_file, final_cmdfile_contents)
+                "command file %s rendered with contents: %s",
+                commands_file,
+                final_cmdfile_contents,
+            )
             return ccfile.name
 
     @staticmethod
@@ -239,26 +251,50 @@ class Hotkdump:
             str: Version string without release variant tags
         """
         # see: https://ubuntu.com/kernel/variants#version-specific-kernels
-        tags = sorted(["generic", "lowlatency", "generic-hwe",
-                       "lowlatency-hwe", "kvm", "aws", "azure", "azure-fde",
-                       "gcp", "gke", "snapdragon", "raspi2"], key=len, reverse=True)
-        version_specific_tags = sorted([
-            "generic-hwe-{}", "generic-hwe-{}", "lowlatency-hwe-{}", "lowlatency-hwe-{}"], key=len, reverse=True)
+        tags = sorted(
+            [
+                "generic",
+                "lowlatency",
+                "generic-hwe",
+                "lowlatency-hwe",
+                "kvm",
+                "aws",
+                "azure",
+                "azure-fde",
+                "gcp",
+                "gke",
+                "snapdragon",
+                "raspi2",
+            ],
+            key=len,
+            reverse=True,
+        )
+        version_specific_tags = sorted(
+            [
+                "generic-hwe-{}",
+                "generic-hwe-{}",
+                "lowlatency-hwe-{}",
+                "lowlatency-hwe-{}",
+            ],
+            key=len,
+            reverse=True,
+        )
         versions = ["16.04", "18.04", "20.04", "22.04", "24.04"]
 
         for vtag in version_specific_tags:
             for version in versions:
-                value = value.replace("-" + vtag.format(version) + '-edge', '')
-                value = value.replace("-" + vtag.format(version), '')
+                value = value.replace("-" + vtag.format(version) + "-edge", "")
+                value = value.replace("-" + vtag.format(version), "")
 
         for tag in tags:
-            value = value.replace(f"-{tag}", '')
-            value = value.replace(f"-{tag}-edge", '')
+            value = value.replace(f"-{tag}", "")
+            value = value.replace(f"-{tag}-edge", "")
 
         validator_regex = re.compile(r"^\d+\.\d+\.\d+-\d+$")
         if not validator_regex.match(value):
             raise ExceptionWithLog(
-                f"The stripped release did not yield a valid version! ({value})")
+                f"The stripped release did not yield a valid version! ({value})"
+            )
 
         return value
 
@@ -273,9 +309,15 @@ class Hotkdump:
             name, content = http_match.groups()
 
             log_fns = {
-                "size": lambda : logging.info("debuginfod-find: vmlinux size: %s", pretty_size(int(content))),
-                "archive": lambda : logging.info("debuginfod-find: `.ddeb` file name: %s", content),
-                "file": lambda : logging.info("debuginfod-find: vmlinux file name: %s", content)
+                "size": lambda: logging.info(
+                    "debuginfod-find: vmlinux size: %s", pretty_size(int(content))
+                ),
+                "archive": lambda: logging.info(
+                    "debuginfod-find: `.ddeb` file name: %s", content
+                ),
+                "file": lambda: logging.info(
+                    "debuginfod-find: vmlinux file name: %s", content
+                ),
             }
 
             if name in log_fns:
@@ -287,8 +329,10 @@ class Hotkdump:
             if not self.debuginfod_find_progress:
                 # In order to be consistent,.we're using the same
                 # progress bar that PullPkg uses.
-                self.debuginfod_find_progress = _StderrProgressBar(os.get_terminal_size(sys.stderr.fileno()).columns)
-            current, maximum =  [int(v) for v in progress_match.groups()]
+                self.debuginfod_find_progress = _StderrProgressBar(
+                    os.get_terminal_size(sys.stderr.fileno()).columns
+                )
+            current, maximum = [int(v) for v in progress_match.groups()]
             if maximum > 0:
                 pct = int((current / maximum) * 100)
                 self.debuginfod_find_progress.update(pct, 100)
@@ -304,7 +348,9 @@ class Hotkdump:
 
             build_id = self.kdump_file.vmcoreinfo.get("BUILD-ID")
             if not build_id:
-                logging.info("cannot use debuginfod-find - BUILD-ID not found in vmcoreinfo!")
+                logging.info(
+                    "cannot use debuginfod-find - BUILD-ID not found in vmcoreinfo!"
+                )
                 return None
 
             debuginfod_find_args = f"-vvv debuginfo {build_id}"
@@ -332,7 +378,11 @@ class Hotkdump:
                 logging.info("debuginfod-find: succeeded, vmcore path: `%s`", line)
                 return line
 
-            logging.info("debuginfod-find: download for BUILD-ID `%s` failed with `%s`", build_id, line)
+            logging.info(
+                "debuginfod-find: download for BUILD-ID `%s` failed with `%s`",
+                build_id,
+                line,
+            )
             return None
         finally:
             self.debuginfod_find_progress = None
@@ -351,7 +401,7 @@ class Hotkdump:
             self.kdump_file.ddhdr.utsname.release,
             self.strip_release_variant_tags(self.kdump_file.ddhdr.utsname.release),
             self.kdump_file.ddhdr.utsname.normalized_version,
-            self.get_architecture()
+            self.get_architecture(),
         )
 
         with switch_cwd(self.params.ddebs_folder_path):
@@ -360,28 +410,36 @@ class Hotkdump:
                 # Already exists, do not download again
                 # TODO(mkg): Verify SHA checksum?
                 logging.info(
-                    "The .ddeb file %s already exists, re-using it", expected_ddeb_path)
+                    "The .ddeb file %s already exists, re-using it", expected_ddeb_path
+                )
                 # Ensure that the file's last access time is updated
                 os.utime(expected_ddeb_path, (time.time(), time.time()))
                 return expected_ddeb_path
 
             logging.info(
                 "Downloading `vmlinux` image for kernel version %s, please be patient...",
-                self.kdump_file.ddhdr.utsname.release)
+                self.kdump_file.ddhdr.utsname.release,
+            )
 
             # (mkg): To force pull-lp-ddebs to use launchpadlibrarian.net for download
             # pass an empty mirror list env variable to the hotkdump, e.g.:
             # UBUNTUTOOLS_UBUNTU_DDEBS_MIRROR= python3 hotkdump.py -c 123 -d dump.dump
-            pull_args = ["--distro", "ubuntu", "--arch", self.get_architecture(), "--pull", "ddebs",
-                         f"linux-image-unsigned-{self.kdump_file.ddhdr.utsname.release}",
-                         f"{self.strip_release_variant_tags(self.kdump_file.ddhdr.utsname.release)}"
-                         f".{self.kdump_file.ddhdr.utsname.normalized_version}"]
+            pull_args = [
+                "--distro",
+                "ubuntu",
+                "--arch",
+                self.get_architecture(),
+                "--pull",
+                "ddebs",
+                f"linux-image-unsigned-{self.kdump_file.ddhdr.utsname.release}",
+                f"{self.strip_release_variant_tags(self.kdump_file.ddhdr.utsname.release)}"
+                f".{self.kdump_file.ddhdr.utsname.normalized_version}",
+            ]
             logging.info("Invoking PullPkg().pull with %s", str(pull_args))
 
             PullPkg().pull(pull_args)
             if not os.path.exists(expected_ddeb_path):
-                raise ExceptionWithLog(
-                    f"failed to download {expected_ddeb_path}")
+                raise ExceptionWithLog(f"failed to download {expected_ddeb_path}")
 
         return expected_ddeb_path
 
@@ -397,33 +455,48 @@ class Hotkdump:
         ddeb_extract_dst = f"{self.temp_working_dir.name}/ddeb-root"
         dpkg_deb_args = f"-x {ddeb_file} {ddeb_extract_dst}"
         logging.info(
-            "Extracting %s to %s, please be patient...", ddeb_file, ddeb_extract_dst)
+            "Extracting %s to %s, please be patient...", ddeb_file, ddeb_extract_dst
+        )
         with switch_cwd(self.params.ddebs_folder_path):
             result = self.exec("dpkg", dpkg_deb_args)
         if result.returncode != 0:
             raise ExceptionWithLog(
-                f"failed to extract {ddeb_file}: {result.stderr.readlines()}")
+                f"failed to extract {ddeb_file}: {result.stderr.readlines()}"
+            )
 
-        return self.temp_working_dir.name + \
-            f"/ddeb-root/usr/lib/debug/boot/vmlinux-{self.kdump_file.ddhdr.utsname.release}"
+        return (
+            self.temp_working_dir.name
+            + f"/ddeb-root/usr/lib/debug/boot/vmlinux-{self.kdump_file.ddhdr.utsname.release}"
+        )
 
-    def summarize_vmcore_file(self, vmlinux_path:str):
-        """Print a summary of the vmcore file to the output file
-        """
-        logging.info("Loading `vmcore` file %s into `crash`, please wait..", self.params.dump_file_path)
+    def summarize_vmcore_file(self, vmlinux_path: str):
+        """Print a summary of the vmcore file to the output file"""
+        logging.info(
+            "Loading `vmcore` file %s into `crash`, please wait..",
+            self.params.dump_file_path,
+        )
         commands_file_path = self.write_crash_commands_file()
-        self.exec(self.crash_executable,
-                  f"-x -i {commands_file_path} -s {self.params.dump_file_path} {vmlinux_path}")
-        logging.info("See %s for logs, %s for outputs", self.params.log_file_path, self.params.output_file_path)
+        self.exec(
+            self.crash_executable,
+            f"-x -i {commands_file_path} -s {self.params.dump_file_path} {vmlinux_path}",
+        )
+        logging.info(
+            "See %s for logs, %s for outputs",
+            self.params.log_file_path,
+            self.params.output_file_path,
+        )
 
-    def launch_crash(self, vmlinux_path:str):
+    def launch_crash(self, vmlinux_path: str):
         """Launch the `crash` application with the user-given vmcore and
         downloaded vmlinux image file
         """
         logging.info(
-            "Loading `vmcore` file %s into `crash`, please wait..", self.params.dump_file_path)
-        self.exec(self.crash_executable,
-                  f"-x {self.params.dump_file_path} {vmlinux_path}")
+            "Loading `vmcore` file %s into `crash`, please wait..",
+            self.params.dump_file_path,
+        )
+        self.exec(
+            self.crash_executable, f"-x {self.params.dump_file_path} {vmlinux_path}"
+        )
 
     def run(self):
         """Run hotkdump main routine."""
@@ -459,8 +532,9 @@ class Hotkdump:
             self.post_run()
 
     def post_run(self):
-        """Perform post-run tasks
-        """
-        retention_mgr = FolderRetentionManager([self.params.ddebs_folder_path], lambda file : file.endswith(".ddeb"))
+        """Perform post-run tasks"""
+        retention_mgr = FolderRetentionManager(
+            [self.params.ddebs_folder_path], lambda file: file.endswith(".ddeb")
+        )
         retention_mgr.load_policies_from_settings(self.params.ddeb_retention_settings)
         retention_mgr.execute_policies()

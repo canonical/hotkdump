@@ -165,3 +165,6 @@ notes = '''FIXME,
 # List of names allowed to shadow builtins
 allowed-redefined-builtins=''
 #########################################
+
+[tool.ruff]
+target-version = "py37"

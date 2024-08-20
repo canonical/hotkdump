@@ -3,17 +3,18 @@
 # Copyright 2023 Canonical Limited.
 # SPDX-License-Identifier: GPL-3.0
 
-"""`hotkdump` exception types.
-"""
+"""`hotkdump` exception types."""
 
 import logging
 
 
 class ExceptionWithLog(Exception):
     """Exception type with automatic logging."""
+
     def __init__(self, msg) -> None:
         logging.error("EXCEPTION: %s", msg)
         super().__init__(msg)
+
 
 class NotAKernelCrashDumpException(ExceptionWithLog):
     """Exception thrown when the given file is not
