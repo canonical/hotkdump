@@ -4,7 +4,6 @@
 # setuptools do not support reading optional-dependencies
 # from pyproject.toml file. Drop this file when python 3.6
 # support is dropped.
-import sys
 import toml
 
 with open("pyproject.toml", "r") as f:

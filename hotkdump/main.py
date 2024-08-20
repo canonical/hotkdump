@@ -21,8 +21,8 @@ sys.path.append(this_script_dir)
 # These are actually need to be run after the sys.path is updated, so
 # we're silencing the warning.
 # pylint: disable=wrong-import-position
-from hotkdump.core.hotkdump import Hotkdump, HotkdumpParameters
-from hotkdump.core.exceptions import NotAKernelCrashDumpException
+from hotkdump.core.hotkdump import Hotkdump, HotkdumpParameters # noqa: E402
+from hotkdump.core.exceptions import NotAKernelCrashDumpException # noqa: E402
 
 
 def main():

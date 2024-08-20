@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 
-# Copyright 2023 Canonical Limited.
-# SPDX-License-Identifier: GPL-3.0
+"""`hotkdump` class unit tests.
 
-"""
-`hotkdump` class unit tests.
+Copyright 2023 Canonical Limited.
+SPDX-License-Identifier: GPL-3.0
 """
 
 from unittest import mock, TestCase
@@ -16,29 +15,13 @@ from hotkdump.core.hotkdump import Hotkdump, HotkdumpParameters, ExceptionWithLo
 
 from tests.utils import (
     assert_has_no_such_calls,
-    mock_file_ctx,
-    mock_stat_obj,
-    fill_zeros,
+    MockFileCtx,
+    MockStatObj,
+    MOCK_HDR
 )
 
 
 mock.Mock.assert_has_no_such_calls = assert_has_no_such_calls
-MOCK_HDR = fill_zeros(
-    b"KDUMP   "  # signature
-    + b"\x01\x02\x03\x04"  # header_version
-    + fill_zeros(b"sys", 65)  # system
-    + fill_zeros(b"node", 65)  # node
-    + fill_zeros(b"release", 65)  # release
-    + fill_zeros(b"#version-443", 65)  # version
-    + fill_zeros(b"machine", 65)  # machine
-    + fill_zeros(b"domain", 65)  # domain
-    + b"\x02" * 6  # padding
-    + b"\x01\x00\x00\x00\x00\x00\x00\x00"  # timestamp_sec
-    + b"\x02\x00\x00\x00\x00\x00\x00\x00"  # timestamp_usec
-    + b"\x03\x00\x00\x00"  # status
-    + b"\x00\x10\x00\x00",  # block_size
-    4096,
-) + fill_zeros(b"", 4096)
 
 
 @mock.patch.multiple(
@@ -52,7 +35,7 @@ MOCK_HDR = fill_zeros(
     "os.path", dirname=lambda x: x, realpath=lambda x: x, exists=lambda x: True
 )
 @mock.patch.multiple("shutil", which=lambda x: x)
-@mock.patch("builtins.open", mock_file_ctx(bytes=MOCK_HDR, name="name"))
+@mock.patch("builtins.open", MockFileCtx(file_bytes=MOCK_HDR, name="name"))
 class HotkdumpTest(TestCase):
     """test hotkdump class public api"""
 
@@ -109,7 +92,7 @@ class HotkdumpTest(TestCase):
         uut.kdump_file.ddhdr.utsname.machine = "invalid"
         self.assertRaises(NotImplementedError, uut.get_architecture)
 
-    @mock.patch("builtins.open", mock_file_ctx(bytes=MOCK_HDR, name="name"))
+    @mock.patch("builtins.open", MockFileCtx(file_bytes=MOCK_HDR, name="name"))
     def test_kdump_hdr(self):
         """Test if the kdump_header has the correct values included
         in the MOCK_HDR after opening the fake vmcore file
@@ -178,6 +161,7 @@ class HotkdumpTest(TestCase):
         params = HotkdumpParameters(dump_file_path="empty", output_file_path="hkd.test")
         uut = Hotkdump(params)
         uut.temp_working_dir.name = "/tmpdir"
+        # pylint: disable=line-too-long
         expected_output = textwrap.dedent(
             r"""
         !echo "---------------------------------------" >> hkd.test
@@ -232,6 +216,7 @@ class HotkdumpTest(TestCase):
         !echo "" >> hkd.test
         """
         ).strip()
+        # pylint: enable=line-too-long
         with mock.patch("builtins.open", new_callable=mock.mock_open()) as mo:
             contents = None
 
@@ -493,7 +478,7 @@ class HotkdumpTest(TestCase):
                 "file4.ddeb",
             ]
 
-            mock_stat.side_effect = lambda fname: mock_stat_obj(
+            mock_stat.side_effect = lambda fname: MockStatObj(
                 fname,
                 {
                     "/path/to/ddebs/file1.ddeb": {
@@ -552,7 +537,7 @@ class HotkdumpTest(TestCase):
                 "file4.ddeb",
             ]
 
-            mock_stat.side_effect = lambda fname: mock_stat_obj(
+            mock_stat.side_effect = lambda fname: MockStatObj(
                 fname,
                 {
                     "/path/to/ddebs/file1.ddeb": {"atime": 0, "size": 15000},
@@ -618,7 +603,7 @@ class HotkdumpTest(TestCase):
                     "file3.txt",
                     "file4.ddeb",
                 ]
-                mock_stat.side_effect = lambda fname, *args, **kwargs: mock_stat_obj(
+                mock_stat.side_effect = lambda fname, *args, **kwargs: MockStatObj(
                     fname,
                     {
                         "/path/to/ddebs/file1.ddeb": {"atime": 0, "size": 15000},

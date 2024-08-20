@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 
-# Copyright 2023 Canonical Limited.
-# SPDX-License-Identifier: GPL-3.0
+"""`hotkdump` class unit tests.
 
-"""
-`hotkdump` class unit tests.
+Copyright 2023 Canonical Limited.
+SPDX-License-Identifier: GPL-3.0
 """
 
 import os
@@ -24,25 +23,8 @@ from hotkdump.core.kdumpfile import (
 )
 from hotkdump.core.hotkdump import Hotkdump, HotkdumpParameters
 
-from tests.utils import mock_file_ctx, fill_zeros
+from tests.utils import MockFileCtx, pad, MOCK_HDR
 
-
-MOCK_HDR = fill_zeros(
-    b"KDUMP   "  # signature
-    + b"\x01\x02\x03\x04"  # header_version
-    + fill_zeros(b"sys", 65)  # system
-    + fill_zeros(b"node", 65)  # node
-    + fill_zeros(b"release", 65)  # release
-    + fill_zeros(b"#version-443", 65)  # version
-    + fill_zeros(b"machine", 65)  # machine
-    + fill_zeros(b"domain", 65)  # domain
-    + b"\x02" * 6  # padding
-    + b"\x01\x00\x00\x00\x00\x00\x00\x00"  # timestamp_sec
-    + b"\x02\x00\x00\x00\x00\x00\x00\x00"  # timestamp_usec
-    + b"\x03\x00\x00\x00"  # status
-    + b"\x00\x10\x00\x00",  # block_size
-    4096,
-) + fill_zeros(b"", 4096)
 
 MOCK_HDR_INVALID_NO_SIG = os.urandom(4096)
 MOCK_VMCOREINFO = b"""key=value
@@ -103,7 +85,7 @@ class TestBinaryFileReader(TestCase):
 class KdumpDiskDumpHeaderTest(TestCase):
     """kdump header parsing tests"""
 
-    @mock.patch("builtins.open", mock_file_ctx(bytes=MOCK_HDR, name="name"))
+    @mock.patch("builtins.open", MockFileCtx(file_bytes=MOCK_HDR, name="name"))
     def test_kdump_hdr(self):
         """Test kdump file header parsing with
         a correct header.
@@ -125,19 +107,19 @@ class KdumpDiskDumpHeaderTest(TestCase):
         fake_file_content = (
             b"KDUMP   "  # signature
             + b"\x01\x00\x00\x00"  # header_version
-            + fill_zeros(b"Linux", 65)  # system
-            + fill_zeros(b"node", 65)  # node
-            + fill_zeros(b"release", 65)  # release
-            + fill_zeros(b"version", 65)  # version
-            + fill_zeros(b"machine", 65)  # machine
-            + fill_zeros(b"domain", 65)  # domain
+            + pad(b"Linux", 65)  # system
+            + pad(b"node", 65)  # node
+            + pad(b"release", 65)  # release
+            + pad(b"version", 65)  # version
+            + pad(b"machine", 65)  # machine
+            + pad(b"domain", 65)  # domain
             + b"\0" * 6  # padding
             + b"\x01\x00\x00\x00\x00\x00\x00\x00"  # timestamp_sec
             + b"\x02\x00\x00\x00\x00\x00\x00\x00"  # timestamp_usec
             + b"\x03\x00\x00\x00"  # status
             + b"\x04\x00\x00\x00"  # block_size
         )
-        fake_file = mock_file_ctx(fake_file_content, "test")
+        fake_file = MockFileCtx(fake_file_content, "test")
         mfile.return_value = fake_file
 
         with fake_file as fd:
@@ -213,7 +195,7 @@ class VMCoreInfoTest(TestCase):
         self.assertEqual(v.get("TEST(ABCD)"), "EFGHI")
         self.assertEqual(v.get("KEY"), "VALUE")
 
-    @mock.patch("builtins.open", mock_file_ctx(bytes=MOCK_VMCOREINFO, name="name"))
+    @mock.patch("builtins.open", MockFileCtx(file_bytes=MOCK_VMCOREINFO, name="name"))
     def test_vmcoreinfo_from_file(self):
         """Check if VMCoreInfo class can read from a file."""
         with open("a", "rb") as f:
@@ -234,19 +216,19 @@ this is a key=value value
 $$=@@
 """
         fake_file_content = (
-            fill_zeros(b"makedumpfile\0\0\0\0", 4096)
+            pad(b"makedumpfile\0\0\0\0", 4096)
             # makedumpfile_data_header
             + struct.pack(">q", 0)  # offset
             + struct.pack(">q", 464)  # size
-            + fill_zeros(
+            + pad(
                 b"KDUMP   "  # signature
                 + struct.pack("<i", 242526)  # header_version
-                + fill_zeros(b"Linux", 65)  # system
-                + fill_zeros(b"node", 65)  # node
-                + fill_zeros(b"release", 65)  # release
-                + fill_zeros(b"version", 65)  # version
-                + fill_zeros(b"machine", 65)  # machine
-                + fill_zeros(b"domain", 65)  # domain
+                + pad(b"Linux", 65)  # system
+                + pad(b"node", 65)  # node
+                + pad(b"release", 65)  # release
+                + pad(b"version", 65)  # version
+                + pad(b"machine", 65)  # machine
+                + pad(b"domain", 65)  # domain
                 + b"\x02" * 6  # padding
                 + struct.pack("<q", 1234)  # timestamp_sec
                 + struct.pack("<q", 5678)  # timestamp_usec
@@ -257,7 +239,7 @@ $$=@@
             # makedumpfile_data_header
             + struct.pack(">q", 4096)  # offsert
             + struct.pack(">q", 4096)  # size
-            + fill_zeros(
+            + pad(
                 struct.pack("<q", 1111)  # phys_base
                 + struct.pack("<i", 2222)  # dump_level
                 + struct.pack("<i", 3333)  # split
@@ -279,7 +261,7 @@ $$=@@
             + fake_vmcoreinfo
         )
 
-        fake_file = mock_file_ctx(fake_file_content, "test")
+        fake_file = MockFileCtx(fake_file_content, "test")
         mfile.return_value = fake_file
 
         kdump_file = KdumpFile("dummy_path")
@@ -328,15 +310,15 @@ $$=@@
 """
         fake_file_content = (
             # 1 page diskdump_header
-            fill_zeros(
+            pad(
                 b"KDUMP   "  # signature
                 + struct.pack("<i", 242526)  # header_version
-                + fill_zeros(b"Linux", 65)  # system
-                + fill_zeros(b"node", 65)  # node
-                + fill_zeros(b"release", 65)  # release
-                + fill_zeros(b"version", 65)  # version
-                + fill_zeros(b"machine", 65)  # machine
-                + fill_zeros(b"domain", 65)  # domain
+                + pad(b"Linux", 65)  # system
+                + pad(b"node", 65)  # node
+                + pad(b"release", 65)  # release
+                + pad(b"version", 65)  # version
+                + pad(b"machine", 65)  # machine
+                + pad(b"domain", 65)  # domain
                 + b"\x02" * 6  # padding
                 + struct.pack("<q", 1234)  # timestamp_sec
                 + struct.pack("<q", 5678)  # timestamp_usec
@@ -362,7 +344,7 @@ $$=@@
             + fake_vmcoreinfo
         )
 
-        fake_file = mock_file_ctx(fake_file_content, "test")
+        fake_file = MockFileCtx(fake_file_content, "test")
         mfile.return_value = fake_file
 
         kdump_file = KdumpFile("dummy_path")
@@ -406,12 +388,12 @@ $$=@@
     @mock.patch("builtins.open", new_callable=mock.mock_open, read_data=b"")
     def test_init_invalid_signature(self, mfile):
         fake_file_content = b"fakefile\0\0\0"
-        fake_file = mock_file_ctx(fake_file_content, "test")
+        fake_file = MockFileCtx(fake_file_content, "test")
         mfile.return_value = fake_file
         with self.assertRaises(NotAKernelCrashDumpException):
             _ = KdumpFile("dummy_path")
 
-    @mock.patch("builtins.open", mock_file_ctx(bytes=MOCK_HDR_INVALID_NO_SIG, name="name"))
+    @mock.patch("builtins.open", MockFileCtx(file_bytes=MOCK_HDR_INVALID_NO_SIG, name="name"))
     def test_kdump_hdr_no_sig(self):
         """Test kdump file header parsing with
         garbage input.
