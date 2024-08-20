@@ -37,6 +37,7 @@ testing = [
   "pytest>=7",
   "pytest-sugar",
   "pylint",
+  "ruff;python_version>'3.6'",
   # The below are ubuntu-dev-tools's dependencies but unfortunately
   # the requirements.txt file is not referred in setup.py so we have
   # to list them here
