@@ -13,12 +13,7 @@ import textwrap
 from hotkdump.core.hotkdump import Hotkdump, HotkdumpParameters, ExceptionWithLog
 
 
-from tests.utils import (
-    assert_has_no_such_calls,
-    MockFileCtx,
-    MockStatObj,
-    MOCK_HDR
-)
+from tests.utils import assert_has_no_such_calls, MockFileCtx, MockStatObj, MOCK_HDR
 
 
 mock.Mock.assert_has_no_such_calls = assert_has_no_such_calls
@@ -40,7 +35,7 @@ class HotkdumpTest(TestCase):
     """test hotkdump class public api"""
 
     def setUp(self):
-        self.patcher = mock.patch('tempfile.TemporaryDirectory')
+        self.patcher = mock.patch("tempfile.TemporaryDirectory")
         self.mock_temp_dir = self.patcher.start()
 
     def tearDown(self):
@@ -583,7 +578,6 @@ class HotkdumpTest(TestCase):
         files post-run when the file retention is disabled.
         """
         with mock.patch("os.remove") as mock_remove:
-
             params = HotkdumpParameters(dump_file_path="empty")
             params.ddebs_folder_path = "/path/to/ddebs"
             params.ddeb_retention_settings.enabled = False

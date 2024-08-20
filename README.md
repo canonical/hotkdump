@@ -103,6 +103,10 @@ Running `tox -e py{36,37,38,39,310,311}` in project root directory will run all 
 tox -e py310
 ```
 
+## Formatting
+
+This project uses `ruff` for formatting. To format the code, simply run `tox -e ruff-format`. Running `tox` with no arguments will automatically run the `ruff-format` environment as well.
+
 ## Versioning
 
 The project will use `<year>.<month>.[<revision>]` as a versioning scheme.

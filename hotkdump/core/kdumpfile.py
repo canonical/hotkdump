@@ -346,7 +346,6 @@ class KdumpFile:
         return self._vmcoreinfo
 
     def __str__(self) -> str:
-
         return " | ".join(
             # Get all attributes, filter out the built-in ones
             # and stringify the rest in "name:value" format
@@ -393,7 +392,6 @@ class KdumpFile:
         # Fetch the next chunk.
         mdhdr = mdhdr.next(fd)
         while mdhdr:
-
             # If the current chunk offset is the offset for kdump_sub_header,
             # parse it.
             if mdhdr.offset == kdump_sub_header_off:
@@ -447,7 +445,5 @@ class KdumpFile:
 
         # Parse vmcoreinfo
         self._vmcoreinfo = VMCoreInfo.from_fd(
-            fd,
-            self.ksubhdr.offset_vmcoreinfo,
-            self.ksubhdr.size_vmcoreinfo
+            fd, self.ksubhdr.offset_vmcoreinfo, self.ksubhdr.size_vmcoreinfo
         )

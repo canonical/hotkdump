@@ -71,10 +71,15 @@ jobs:
         run: |
           tox -e pylint
 
-      - name: Run ruff
+      - name: Run ruff-check
         if: matrix.toxenv== 'py312'
         run: |
-          tox -e ruff
+          tox -e ruff-check
+
+      - name: Run ruff-format-check
+        if: matrix.toxenv== 'py312'
+        run: |
+          tox -e ruff-format-check
   Test-Snap:
     runs-on: ubuntu-20.04
     steps:
