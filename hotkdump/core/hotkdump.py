@@ -16,12 +16,6 @@ import time
 import textwrap
 from datetime import datetime
 from dataclasses import dataclass, field
-import warnings
-
-try:
-    from importlib.resources import read_text
-except ModuleNotFoundError:
-    from importlib_resources import read_text
 
 
 try:
@@ -36,7 +30,7 @@ except ModuleNotFoundError as exc:
         "Install it via `sudo apt install ubuntu-dev-tools`"
     ) from exc
 
-from jinja2 import Template
+from jinja2 import Environment, FileSystemLoader
 
 from hotkdump.core.exceptions import ExceptionWithLog
 from hotkdump.core.kdumpfile import KdumpFile
@@ -56,7 +50,7 @@ class HotkdumpParameters:
     dump_file_path: str
     internal_case_number: str = None
     interactive: bool = False
-    output_file_path: str = mktemppath("hotkdump.out")
+    summary: str = None
     log_file_path: str = mktemppath("hotkdump.log")
     ddebs_folder_path: str = mktemppath("hotkdump", "ddebs")
     ddeb_retention_settings: FolderRetentionManagerSettings = field(
@@ -105,14 +99,6 @@ class Hotkdump:
         logging.debug("%s", self.params)
         logging.info("reading vmcore file %s", self.params.dump_file_path)
 
-        self.touch_file(self.params.output_file_path)
-        tstamp_now = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        vmcore_filename = self.params.dump_file_path.rsplit("/", 1)[-1]
-        with open(self.params.output_file_path, "w", encoding="utf-8") as outfile:
-            outfile.write(
-                f"{tstamp_now}: processing {vmcore_filename} (CASE# {self.params.internal_case_number})\n"
-            )
-
         self.kdump_file = KdumpFile(self.params.dump_file_path)
 
         logging.info("kernel version: %s", self.kdump_file.ddhdr.utsname.release)
@@ -125,6 +111,13 @@ class Hotkdump:
 
         # Create the ddeb path if not exists
         os.makedirs(self.params.ddebs_folder_path, exist_ok=True)
+        if self.params.summary:
+            try:
+                os.makedirs(self.params.summary)
+            except FileExistsError as e:
+                raise SystemExit(
+                    f"Output folder `{self.params.summary}` already exist!"
+                ) from e
 
     def get_architecture(self):
         """Translate kdump architecture string to
@@ -174,7 +167,9 @@ class Hotkdump:
         """Initialize logging for hotkdump"""
         self.logger = logging.getLogger()
         file_logger = logging.FileHandler(filename=self.params.log_file_path)
+        formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(message)s")
         console_logger = logging.StreamHandler(sys.stdout)
+        console_logger.setFormatter(formatter)
         # Allow log level overrides from environment
         level = os.environ.get("HOTKDUMP_LOGLEVEL", "INFO").upper()
 
@@ -197,21 +192,26 @@ class Hotkdump:
         with open(fname, "w", encoding="utf-8"):
             pass
 
+    @classmethod
+    def _load_jinja_template(cls, template_name, autoescape=True):
+        """Load a jinja template from templates folder."""
+        jinja_env = Environment(
+            loader=FileSystemLoader("hotkdump/templates"), autoescape=autoescape
+        )
+        jinja_env.globals.update(makedirs=os.makedirs)
+        logging.debug("available jinja templates: %s", str(jinja_env.list_templates()))
+        return jinja_env.get_template(template_name)
+
     def write_crash_commands_file(self):
         """Render and write the crash_commands file."""
-        commands_file = f"{self.temp_working_dir.name}/crash_commands"
-        of_path = self.params.output_file_path
+        summary_root = self.params.summary
+        commands_file = f"{summary_root}/crash_commands"
 
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", category=DeprecationWarning)
-            # Read & render the template
-            jinja_template_content = read_text(
-                "hotkdump.templates", "crash_commands.jinja"
-            )
+        template = self._load_jinja_template("main.jinja", autoescape=False)
 
-        template = Template(jinja_template_content)
         rendered_content = template.render(
-            output_file_path=of_path, commands_file_name=commands_file
+            summary_root=summary_root,
+            commands_file_name=commands_file,
         )
 
         with open(commands_file, "w", encoding="utf-8") as ccfile:
@@ -224,6 +224,47 @@ class Hotkdump:
             )
             return ccfile.name
 
+    def render_summary_index_page(self):
+        """Render a HTML page for hotkdump summary."""
+
+        index_page = f"{self.params.summary}/index.html"
+        page_template = self._load_jinja_template("index.html")
+
+        data_sources = sorted(
+            [
+                item
+                for item in os.listdir(self.params.summary)
+                if os.path.isdir(os.path.join(self.params.summary, item))
+            ]
+        )
+
+        commands = {}
+
+        for ds in data_sources:
+            path = os.path.join(self.params.summary, ds)
+            commands[ds] = sorted(os.listdir(path))
+
+        rendered_content = page_template.render(
+            data_sources=data_sources,
+            commands=commands,
+            summary_root=self.params.summary,
+            info={
+                "VMCore": self.params.dump_file_path.rsplit("/", 1)[-1],
+                "Date": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                "Kernel": f"{self.kdump_file.ddhdr.utsname.release} ({self.get_architecture()})",
+            },
+        )
+
+        with open(index_page, "w", encoding="utf-8") as index_page_file:
+            final_cmdfile_contents = textwrap.dedent(rendered_content).strip()
+            index_page_file.write(final_cmdfile_contents)
+            logging.debug(
+                "summary index page %s rendered with contents: %s",
+                index_page,
+                final_cmdfile_contents,
+            )
+            return index_page_file.name
+
     @staticmethod
     def exec(command: str, args: str, working_dir=None) -> subprocess.Popen:
         """Execute a command with arguments in specified working directory (optional).
@@ -233,7 +274,11 @@ class Hotkdump:
             Popen: Popen object representing the executed command
         """
         logging.info("Executing command: `%s %s`", command, args)
-        with subprocess.Popen(f"{command} {args}", shell=True, cwd=working_dir) as p:
+        with subprocess.Popen(
+            f"{command} {args}",
+            shell=True,
+            cwd=working_dir,
+        ) as p:
             p.wait()
         return p
 
@@ -488,14 +533,16 @@ class Hotkdump:
             self.params.dump_file_path,
         )
         commands_file_path = self.write_crash_commands_file()
+
         self.exec(
             self.crash_executable,
             f"-x -i {commands_file_path} -s {self.params.dump_file_path} {vmlinux_path}",
         )
+        self.render_summary_index_page()
         logging.info(
             "See %s for logs, %s for outputs",
             self.params.log_file_path,
-            self.params.output_file_path,
+            self.params.summary,
         )
 
     def launch_crash(self, vmlinux_path: str):

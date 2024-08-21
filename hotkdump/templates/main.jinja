@@ -1,0 +1,11 @@
+{% include "crash_commands.jinja" %}
+{% if pykdump_available %}
+    {% include "crash_pykdump.jinja" %}
+{% endif -%}
+!echo "\nquit" >> {{ commands_file_name }}
+!echo ""
+{#
+# (mkg): The last empty echo is important to allow
+# crash to pick up the commands appended to the command
+# file at the runtime.
+#}

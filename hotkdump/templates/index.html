@@ -1,0 +1,45 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html;
+          charset=utf-8">
+    <title>hotkdump summary</title>
+    <style type="text/css">
+        td {
+            padding: 0 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <h3>Info:</h3>
+    <ul>
+        {% for ikey,ivalue in info.items() -%}
+        <li>{{ ikey }}: {{ ivalue }}</li>
+        {% endfor %}
+    </ul>
+    <hr />
+    <h3>Data sources:</h3>
+    <table>
+        <tbody>
+            <tr>
+                {% for ds in data_sources -%}
+                <td><a href='{{ "#{}".format(ds) | e }}'>{{ ds }}</td>
+                {% endfor %}
+            </tr>
+        </tbody>
+    </table>
+
+    {% for ds in data_sources -%}
+    <hr />
+    <h2 id="{{ ds }}"><em>{{ ds }}</em></h2>
+    <p>Commands executed:</p>
+    <ul>
+        {% for command in commands.get(ds) -%}
+        <li><a href='{{ "{}/{}".format(ds, command) | e }}'>{{ command }}</a></li>
+        {% endfor %}
+    </ul>
+    {% endfor %}
+</body>
+
+</html>

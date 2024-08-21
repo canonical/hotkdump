@@ -43,17 +43,18 @@ def main():
         required=False,
         default=0,
     )
-    ap.add_argument(
+    operation_mode_group = ap.add_mutually_exclusive_group(required=True)
+    operation_mode_group.add_argument(
         "-i",
         "--interactive",
-        help="Start the `crash` in interactive mode instead of printing summary",
+        help="Start the `crash` in interactive mode.",
         action="store_true",
     )
-    ap.add_argument(
-        "-o",
-        "--output-file-path",
-        help="Output file path for the summary",
-        required=False,
+    operation_mode_group.add_argument(
+        "-s",
+        "--summary",
+        help="Summary mode",
+        default=None,
     )
     ap.add_argument("-l", "--log-file-path", help="log file path", required=False)
     ap.add_argument(
