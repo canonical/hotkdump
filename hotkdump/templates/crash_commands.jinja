@@ -6,59 +6,16 @@
 #   after a write() of the data, it must reflect that write(), even
 #   if the calls are made by different processes."
 #}
-
-!echo "---------------------------------------" >> {{ output_file_path }}
-!echo "Output of 'sys'" >> {{ output_file_path }}
-!echo "---------------------------------------" >> {{ output_file_path }}
-sys >> {{ output_file_path }}
-!echo "---------------------------------------" >> {{ output_file_path }}
-!echo "Output of 'bt'" >> {{ output_file_path }}
-!echo "---------------------------------------" >> {{ output_file_path }}
-bt >> {{ output_file_path }}
-!echo "---------------------------------------" >> {{ output_file_path }}
-!echo "Output of 'log' with audit messages filtered out" >> {{ output_file_path }}
-!echo "---------------------------------------" >> {{ output_file_path }}
-log | grep -vi audit >> {{ output_file_path }}
-!echo "---------------------------------------" >> {{ output_file_path }}
-!echo "Output of 'kmem -i'" >> {{ output_file_path }}
-!echo "---------------------------------------" >> {{ output_file_path }}
-kmem -i >> {{ output_file_path }}
-!echo "---------------------------------------" >> {{ output_file_path }}
-!echo "Output of 'dev -d'" >> {{ output_file_path }}
-!echo "---------------------------------------" >> {{ output_file_path }}
-dev -d >> {{ output_file_path }}
-!echo "---------------------------------------" >> {{ output_file_path }}
-!echo "Output of 'mount'" >> {{ output_file_path }}
-!echo "---------------------------------------" >> {{ output_file_path }}
-mount >> {{ output_file_path }}
-!echo "---------------------------------------" >> {{ output_file_path }}
-!echo "Output of 'files'" >> {{ output_file_path }}
-!echo "---------------------------------------" >> {{ output_file_path }}
-files >> {{ output_file_path }}
-!echo "---------------------------------------" >> {{ output_file_path }}
-!echo "Output of 'vm'" >> {{ output_file_path }}
-!echo "---------------------------------------" >> {{ output_file_path }}
-vm >> {{ output_file_path }}
-!echo "---------------------------------------" >> {{ output_file_path }}
-!echo "Output of 'net'" >> {{ output_file_path }}
-!echo "---------------------------------------" >> {{ output_file_path }}
-net >> {{ output_file_path }}
-!echo "---------------------------------------" >> {{ output_file_path }}
-!echo "Longest running blocked processes" >> {{ output_file_path }}
-!echo "---------------------------------------" >> {{ output_file_path }}
-ps -m | grep UN | tail >> {{ output_file_path }}
-!echo "---------------------------------------" >> {{ output_file_path }}
-!echo "Top 20 memory consumers" >> {{ output_file_path }}
-!echo "---------------------------------------" >> {{ output_file_path }}
-ps -G | sed 's/>//g' | sort -k 8,8 -n | awk '$8 ~ /[0-9]/{ $8 = $8/1024" MB"; print }' | tail -20 | sort -r -k8,8 -g >> {{ output_file_path }}
-!echo "\n!echo '---------------------------------------' >> {{ output_file_path }}" >> {{ commands_file_name }}
-!echo "\n!echo 'BT of the longest running blocked process' >> {{ output_file_path }}" >> {{ commands_file_name }}
-!echo "\n!echo '---------------------------------------' >> {{ output_file_path }}" >> {{ commands_file_name }}
-ps -m | grep UN | tail -n1 | grep -oE "PID: [0-9]+" | grep -oE "[0-9]+" | awk '{print "bt " $1 " >> {{ output_file_path }}"}' >> {{ commands_file_name }}
-!echo "\nquit >> {{ output_file_path }}" >> {{ commands_file_name }}
-!echo "" >> {{ output_file_path }}
-{#
-# (mkg): The last empty echo is important to allow
-# crash to pick up the commands appended to the command
-# file at the runtime.
-#}
+{% set _ = makedirs(summary_root + "/crash") -%}
+sys >> {{ summary_root }}/crash/'1 - System data (sys)'
+kmem -i >> {{ summary_root }}/crash/'2 - Memory usage information - "kmem -i"'
+net >> {{ summary_root }}/crash/'3 - System network device list - "net"'
+dev -d >> {{ summary_root }}/crash/'4 - Disk IO statistics "dev -d"''
+mount >> {{ summary_root }}/crash/'5 - Mounts - "mount"'
+log | grep -vi audit >> {{ summary_root }}/crash/'6 - Log without audit messages'
+bt >> {{ summary_root }}/crash/'7 - Backtrace of the current process - "bt"'
+files >> {{ summary_root }}/crash/'8 - Files open by current process - "files"'
+vm >> {{ summary_root }}/crash/'9 - Virtual memory of current process - "vm"'
+ps -m | grep UN | tail >> {{ summary_root }}/crash/"10 - Longest running blocked processes"
+ps -G | sed 's/>//g' | sort -k 8,8 -n | awk '$8 ~ /[0-9]/{ $8 = $8/1024" MB"; print }' | tail -20 | sort -r -k8,8 -g >> {{ summary_root }}/crash/'11 - Top 20 memory consumers'
+ps -m | grep UN | tail -n1 | grep -oE "PID: [0-9]+" | grep -oE "[0-9]+" | awk '{print "bt " $1 " >> {{ summary_root }}/crash/12-longest_running_blocked_ps_bt"}' >> {{ commands_file_name }}

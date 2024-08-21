@@ -9,6 +9,9 @@ SPDX-License-Identifier: GPL-3.0
 from unittest import mock, TestCase
 
 import textwrap
+import tempfile
+import datetime
+import os
 
 from hotkdump.core.hotkdump import Hotkdump, HotkdumpParameters, ExceptionWithLog
 
@@ -60,7 +63,7 @@ class HotkdumpTest(TestCase):
         params = HotkdumpParameters(
             internal_case_number="1",
             dump_file_path="vmcore",
-            output_file_path="opf",
+            summary="opf",
             log_file_path="log",
             ddebs_folder_path="ddebs",
             interactive=True,
@@ -68,7 +71,7 @@ class HotkdumpTest(TestCase):
         uut = Hotkdump(params)
         self.assertEqual(uut.params.internal_case_number, "1")
         self.assertEqual(uut.params.dump_file_path, "vmcore")
-        self.assertEqual(uut.params.output_file_path, "opf")
+        self.assertEqual(uut.params.summary, "opf")
         self.assertEqual(uut.params.log_file_path, "log")
         self.assertEqual(uut.params.ddebs_folder_path, "ddebs")
         self.assertEqual(uut.params.interactive, True)
@@ -148,82 +151,6 @@ class HotkdumpTest(TestCase):
         ):
             with mock.patch("shutil.which", lambda *a, **kw: None):
                 self.assertRaises(ExceptionWithLog, uut.find_crash_executable)
-
-    def test_write_crash_commands_file(self):
-        """Verify that the hotkdump `write_crash_commands_file` writes the
-        correct commands file.
-        """
-        params = HotkdumpParameters(dump_file_path="empty", output_file_path="hkd.test")
-        uut = Hotkdump(params)
-        uut.temp_working_dir.name = "/tmpdir"
-        # pylint: disable=line-too-long
-        expected_output = textwrap.dedent(
-            r"""
-        !echo "---------------------------------------" >> hkd.test
-        !echo "Output of 'sys'" >> hkd.test
-        !echo "---------------------------------------" >> hkd.test
-        sys >> hkd.test
-        !echo "---------------------------------------" >> hkd.test
-        !echo "Output of 'bt'" >> hkd.test
-        !echo "---------------------------------------" >> hkd.test
-        bt >> hkd.test
-        !echo "---------------------------------------" >> hkd.test
-        !echo "Output of 'log' with audit messages filtered out" >> hkd.test
-        !echo "---------------------------------------" >> hkd.test
-        log | grep -vi audit >> hkd.test
-        !echo "---------------------------------------" >> hkd.test
-        !echo "Output of 'kmem -i'" >> hkd.test
-        !echo "---------------------------------------" >> hkd.test
-        kmem -i >> hkd.test
-        !echo "---------------------------------------" >> hkd.test
-        !echo "Output of 'dev -d'" >> hkd.test
-        !echo "---------------------------------------" >> hkd.test
-        dev -d >> hkd.test
-        !echo "---------------------------------------" >> hkd.test
-        !echo "Output of 'mount'" >> hkd.test
-        !echo "---------------------------------------" >> hkd.test
-        mount >> hkd.test
-        !echo "---------------------------------------" >> hkd.test
-        !echo "Output of 'files'" >> hkd.test
-        !echo "---------------------------------------" >> hkd.test
-        files >> hkd.test
-        !echo "---------------------------------------" >> hkd.test
-        !echo "Output of 'vm'" >> hkd.test
-        !echo "---------------------------------------" >> hkd.test
-        vm >> hkd.test
-        !echo "---------------------------------------" >> hkd.test
-        !echo "Output of 'net'" >> hkd.test
-        !echo "---------------------------------------" >> hkd.test
-        net >> hkd.test
-        !echo "---------------------------------------" >> hkd.test
-        !echo "Longest running blocked processes" >> hkd.test
-        !echo "---------------------------------------" >> hkd.test
-        ps -m | grep UN | tail >> hkd.test
-        !echo "---------------------------------------" >> hkd.test
-        !echo "Top 20 memory consumers" >> hkd.test
-        !echo "---------------------------------------" >> hkd.test
-        ps -G | sed 's/>//g' | sort -k 8,8 -n | awk '$8 ~ /[0-9]/{ $8 = $8/1024" MB"; print }' | tail -20 | sort -r -k8,8 -g >> hkd.test
-        !echo "\n!echo '---------------------------------------' >> hkd.test" >> /tmpdir/crash_commands
-        !echo "\n!echo 'BT of the longest running blocked process' >> hkd.test" >> /tmpdir/crash_commands
-        !echo "\n!echo '---------------------------------------' >> hkd.test" >> /tmpdir/crash_commands
-        ps -m | grep UN | tail -n1 | grep -oE "PID: [0-9]+" | grep -oE "[0-9]+" | awk '{print "bt " $1 " >> hkd.test"}' >> /tmpdir/crash_commands
-        !echo "\nquit >> hkd.test" >> /tmpdir/crash_commands
-        !echo "" >> hkd.test
-        """
-        ).strip()
-        # pylint: enable=line-too-long
-        with mock.patch("builtins.open", new_callable=mock.mock_open()) as mo:
-            contents = None
-
-            def update_contents(c):
-                nonlocal contents
-                contents = c
-
-            mo.return_value.__enter__.return_value.write = update_contents
-            mo.return_value.__enter__.return_value.name = "/tmpdir/crash_commands"
-            self.assertEqual("/tmpdir/crash_commands", uut.write_crash_commands_file())
-            mo.assert_called_with("/tmpdir/crash_commands", "w", encoding="utf-8")
-            self.assertEqual(contents, expected_output)
 
     def test_exec(self):
         """Verify that the hotkdump calls the subprocess.Popen
@@ -659,3 +586,139 @@ class HotkdumpTest(TestCase):
 
         hkdump.params.debug_file = None
         self.assertEqual(hkdump.maybe_get_user_specified_vmlinux(), None)
+
+
+class HotkdumpTestJinja(TestCase):
+    def setUp(self):
+        pass
+        # self.patcher = mock.patch("tempfile.TemporaryDirectory")
+        # self.mock_temp_dir = self.patcher.start()
+
+    def tearDown(self):
+        pass
+        # self.patcher.stop()
+
+    @mock.patch("builtins.open", MockFileCtx(file_bytes=MOCK_HDR, name="name"))
+    @mock.patch.multiple(
+        "os",
+        makedirs=lambda *a, **kw: None,
+    )
+    @mock.patch.multiple("shutil", which=lambda x: x)
+    def get_uut(self, params):
+        """Retrieve the uut."""
+        return Hotkdump(params)
+
+    def read_text(self, path):
+        with open(path, "r", encoding="utf-8") as f:
+            return f.read()
+
+    def touch_file(self, path):
+        with open(path, "w", encoding="utf-8"):
+            pass
+
+    def test_write_crash_commands_file(self):
+        """Verify that the hotkdump `write_crash_commands_file` writes the
+        correct commands file.
+        """
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            uut = self.get_uut(
+                HotkdumpParameters(dump_file_path="empty", summary=tmpdirname)
+            )
+
+            # pylint: disable=line-too-long
+            expected_output = textwrap.dedent(
+                rf"""
+                sys >> {tmpdirname}/crash/'1 - System data (sys)'
+                kmem -i >> {tmpdirname}/crash/'2 - Memory usage information - "kmem -i"'
+                net >> {tmpdirname}/crash/'3 - System network device list - "net"'
+                dev -d >> {tmpdirname}/crash/'4 - Disk IO statistics "dev -d"''
+                mount >> {tmpdirname}/crash/'5 - Mounts - "mount"'
+                log | grep -vi audit >> {tmpdirname}/crash/'6 - Log without audit messages'
+                bt >> {tmpdirname}/crash/'7 - Backtrace of the current process - "bt"'
+                files >> {tmpdirname}/crash/'8 - Files open by current process - "files"'
+                vm >> {tmpdirname}/crash/'9 - Virtual memory of current process - "vm"'
+                ps -m | grep UN | tail >> {tmpdirname}/crash/"10 - Longest running blocked processes"
+                ps -G | sed 's/>//g' | sort -k 8,8 -n | awk '$8 ~ /[0-9]/{{ $8 = $8/1024" MB"; print }}' | tail -20 | sort -r -k8,8 -g >> {tmpdirname}/crash/'11 - Top 20 memory consumers'
+                ps -m | grep UN | tail -n1 | grep -oE "PID: [0-9]+" | grep -oE "[0-9]+" | awk '{{print "bt " $1 " >> {tmpdirname}/crash/12-longest_running_blocked_ps_bt"}}' >> {tmpdirname}/crash_commands
+                !echo "\nquit" >> {tmpdirname}/crash_commands
+                !echo ""
+                """
+            ).strip()
+            # pylint: enable=line-too-long
+            r = uut.write_crash_commands_file()
+            contents = self.read_text(r)
+            self.assertEqual(contents, expected_output)
+
+    def test_render_summary_index_page(self):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            uut = self.get_uut(
+                HotkdumpParameters(dump_file_path="empty", summary=tmpdirname)
+            )
+            os.makedirs(os.path.join(tmpdirname, "crash"))
+            os.makedirs(os.path.join(tmpdirname, "pykdump"))
+            self.touch_file(os.path.join(tmpdirname, "crash", "test1"))
+            self.touch_file(os.path.join(tmpdirname, "crash", "test 2 3"))
+            self.touch_file(os.path.join(tmpdirname, "pykdump", "crashinfo"))
+            with mock.patch.object(
+                uut, "get_architecture", return_value="test", create=True
+            ), mock.patch("hotkdump.core.hotkdump.datetime") as md:
+                md.now.return_value = datetime.datetime(2012, 11, 10, 9, 8, 7)
+                f = uut.render_summary_index_page()
+
+            expected_output = textwrap.dedent(
+                r"""
+                <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+
+                <head>
+                    <meta http-equiv="Content-Type" content="text/html;
+                          charset=utf-8">
+                    <title>hotkdump summary</title>
+                    <style type="text/css">
+                        td {
+                            padding: 0 5px;
+                        }
+                    </style>
+                </head>
+
+                <body>
+                    <h3>Info:</h3>
+                    <ul>
+                        <li>VMCore: empty</li>
+                        <li>Date: 10/11/2012 09:08:07</li>
+                        <li>Kernel: release (test)</li>
+
+                    </ul>
+                    <hr />
+                    <h3>Data sources:</h3>
+                    <table>
+                        <tbody>
+                            <tr>
+                                <td><a href='#crash'>crash</td>
+                                <td><a href='#pykdump'>pykdump</td>
+
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <hr />
+                    <h2 id="crash"><em>crash</em></h2>
+                    <p>Commands executed:</p>
+                    <ul>
+                        <li><a href='crash/test 2 3'>test 2 3</a></li>
+                        <li><a href='crash/test1'>test1</a></li>
+
+                    </ul>
+                    <hr />
+                    <h2 id="pykdump"><em>pykdump</em></h2>
+                    <p>Commands executed:</p>
+                    <ul>
+                        <li><a href='pykdump/crashinfo'>crashinfo</a></li>
+
+                    </ul>
+
+                </body>
+
+                </html>
+                """
+            ).strip()
+            self.assertEqual(expected_output, self.read_text(f))

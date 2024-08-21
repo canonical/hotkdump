@@ -39,8 +39,8 @@ options:
   -c INTERNAL_CASE_NUMBER, --internal-case-number INTERNAL_CASE_NUMBER
                         Canonical Support internal case number (default: 0)
   -i, --interactive     Start the `crash` in interactive mode instead of printing summary (default: False)
-  -o OUTPUT_FILE_PATH, --output-file-path OUTPUT_FILE_PATH
-                        Output file path for the summary (default: None)
+  -s SUMMARY_ROOT, --summary SUMMARY_ROOT
+                        Root directory for summary output (default: None)
   -l LOG_FILE_PATH, --log-file-path LOG_FILE_PATH
                         log file path (default: None)
   -p DDEBS_FOLDER_PATH, --ddebs-folder-path DDEBS_FOLDER_PATH
