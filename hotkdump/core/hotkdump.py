@@ -30,7 +30,7 @@ except ModuleNotFoundError as exc:
         "Install it via `sudo apt install ubuntu-dev-tools`"
     ) from exc
 
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, PackageLoader
 
 from hotkdump.core.exceptions import ExceptionWithLog
 from hotkdump.core.kdumpfile import KdumpFile
@@ -196,7 +196,7 @@ class Hotkdump:
     def _load_jinja_template(cls, template_name, autoescape=True):
         """Load a jinja template from templates folder."""
         jinja_env = Environment(
-            loader=FileSystemLoader("hotkdump/templates"), autoescape=autoescape
+            loader=PackageLoader("hotkdump", "templates"), autoescape=autoescape
         )
         jinja_env.globals.update(makedirs=os.makedirs)
         logging.debug("available jinja templates: %s", str(jinja_env.list_templates()))

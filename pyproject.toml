@@ -67,7 +67,10 @@ requires = ["setuptools>=43.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["hotkdump", "hotkdump.core"]
+packages = ["hotkdump", "hotkdump.core", "hotkdump.templates"]
+
+[tool.setuptools.package-data]
+"hotkdump.templates" = ["*.jinja", "*.html"]
 
 #########################################
 # Pylint configuration
