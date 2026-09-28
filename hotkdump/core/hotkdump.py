@@ -376,7 +376,7 @@ class Hotkdump:
                 # In order to be consistent,.we're using the same
                 # progress bar that PullPkg uses.
                 self.debuginfod_find_progress = _StderrProgressBar(
-                    os.get_terminal_size(sys.stderr.fileno()).columns
+                    shutil.get_terminal_size().columns
                 )
             current, maximum = [int(v) for v in progress_match.groups()]
             if maximum > 0:
